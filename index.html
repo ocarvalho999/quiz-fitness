@@ -197,14 +197,6 @@
     .quiz-insight-texto.visivel { opacity: 1; }
     .quiz-insight-texto::before { content: '›'; font-family: var(--font-mono); font-size: 14px; flex-shrink: 0; }
 
-    /* Indicador de sistema "aprendendo" */
-    .quiz-sistema-status {
-      display: flex; align-items: center; gap: 8px; margin-top: 8px;
-      font-family: var(--font-mono); font-size: 10px; color: var(--cor-texto-suave);
-      letter-spacing: .06em; opacity: 0; transition: opacity .3s ease;
-    }
-    .quiz-sistema-status.visivel { opacity: 1; }
-    .quiz-sistema-dot { width: 5px; height: 5px; background: var(--cor-primaria); border-radius: 50%; animation: pulso 1s infinite; }
 
     /* ============================================================
        CAPTURA DE DADOS
@@ -435,10 +427,6 @@
     <div class="opcoes-container" id="opcoes-container"></div>
     <div id="quiz-insight-wrap">
       <p class="quiz-insight-texto" id="quiz-insight"></p>
-    </div>
-    <div class="quiz-sistema-status" id="quiz-sistema-status">
-      <span class="quiz-sistema-dot"></span>
-      <span id="quiz-sistema-msg">Sistema analisando perfil...</span>
     </div>
   </section>
 
@@ -1161,18 +1149,14 @@ function identificarPerfil() {
 ============================================================ */
 function mostrarInsight(texto) {
   const el = $("quiz-insight");
-  const statusEl = $("quiz-sistema-status");
-  if (!texto) { el.classList.remove("visivel"); statusEl.classList.remove("visivel"); return; }
+  if (!texto) { el.classList.remove("visivel"); return; }
   el.textContent = texto;
   el.classList.add("visivel");
-  statusEl.classList.add("visivel");
-  $("quiz-sistema-msg").textContent = "Sistema atualizando análise de perfil...";
 }
 
 function limparInsight() {
   const el = $("quiz-insight");
   el.classList.remove("visivel");
-  $("quiz-sistema-status").classList.remove("visivel");
 }
 
 /* ============================================================
