@@ -249,6 +249,45 @@
     ============================================================ */
     .resultado-tela { padding-top: 40px; padding-bottom: 60px; }
 
+    /* ── Seção Antes/Depois ── */
+    .transformacao-bloco {
+      margin-bottom: 28px; padding: 20px;
+      background: var(--cor-card); border: 1px solid var(--cor-borda);
+    }
+    .transformacao-headline {
+      font-size: 15px; color: var(--cor-texto); line-height: 1.65;
+      margin-bottom: 20px;
+    }
+    .transformacao-headline strong { color: var(--cor-acento); }
+    .transformacao-headline .nome-destaque { color: var(--cor-primaria); font-weight: 700; }
+    .antes-depois-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .antes-depois-card { text-align: center; }
+    .antes-depois-label {
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em;
+      text-transform: uppercase; padding: 5px 0; margin-bottom: 8px;
+    }
+    .antes-depois-label.antes { color: var(--cor-texto-suave); border-bottom: 1px solid var(--cor-borda); }
+    .antes-depois-label.depois { color: var(--cor-primaria); border-bottom: 1px solid var(--cor-primaria); }
+    .antes-depois-img {
+      width: 100%; aspect-ratio: 3/4; object-fit: cover;
+      background: #1a1a1a; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--cor-texto-suave); font-family: var(--font-mono);
+    }
+    .antes-depois-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .antes-depois-img.placeholder { border: 1px dashed var(--cor-borda); }
+    .resultados-30d-titulo {
+      font-family: var(--font-mono); font-size: 10px; color: var(--cor-primaria);
+      letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .resultados-30d-lista { list-style: none; }
+    .resultados-30d-lista li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 13px; color: var(--cor-texto); padding: 7px 0;
+      border-bottom: 1px solid var(--cor-borda); line-height: 1.45;
+    }
+    .resultados-30d-lista li:last-child { border-bottom: none; }
+    .resultados-30d-lista .icone { color: var(--cor-primaria); flex-shrink: 0; margin-top: 1px; font-size: 14px; }
+
     .resultado-badge {
       display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px;
       font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em;
@@ -478,6 +517,7 @@
       <span id="perfil-chip-texto">perfil identificado</span>
     </div>
     <h2 class="resultado-titulo" id="titulo-consultoria"></h2>
+    <div id="transformacao-bloco-consultoria"></div>
     <div class="resultado-diagnostico" id="diagnostico-consultoria"></div>
 
     <p class="bloqueios-titulo">⚠ SEUS 3 MAIORES BLOQUEIOS IDENTIFICADOS</p>
@@ -514,6 +554,7 @@
   <section class="tela resultado-tela" id="tela-resultado-whatsapp">
     <div class="resultado-badge verde">💪 PERFIL: PRONTO PARA DAR O PRIMEIRO PASSO REAL</div>
     <h2 class="resultado-titulo" id="titulo-whatsapp"></h2>
+    <div id="transformacao-bloco-whatsapp"></div>
     <div class="resultado-diagnostico" id="diagnostico-whatsapp"></div>
 
     <p class="bloqueios-titulo">O QUE VOCÊ RECEBE NA COMUNIDADE</p>
@@ -636,6 +677,20 @@ const PERGUNTAS = [
       { letra:"B", texto:"25 a 34 anos", pontos:5,  tag:"25-34", ind:{ urgencia:5 },   insight:"Os 30 são a janela de ouro para resultados definitivos.", aoSelecionar:(s)=>{ s.idadeFaixa="25-34"; } },
       { letra:"C", texto:"35 a 44 anos", pontos:10, tag:"35-44", ind:{ urgencia:10, acompanhamento:10 }, insight:"A estratégia certa faz cada vez mais diferença nessa faixa.", aoSelecionar:(s)=>{ s.idadeFaixa="35-44"; } },
       { letra:"D", texto:"45 anos ou mais",pontos:10,tag:"45+",  ind:{ urgencia:10, acompanhamento:15 }, insight:"Personalização não é opcional aqui — é essencial.", aoSelecionar:(s)=>{ s.idadeFaixa="45+"; } },
+    ],
+  },
+  {
+    id: "p_biotipo",
+    texto: "Qual é o seu biotipo corporal?",
+    contexto: "Isso define como seu protocolo de treino e alimentação será estruturado.",
+    modulo: "PRÉ",
+    moduloLabel: "BIOTIPO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", texto:"Ectomorfo — sou magro e tenho dificuldade de ganhar peso e músculo",  pontos:5,  tag:"ectomorfo",  ind:{ acompanhamento:10 }, insight:"Ectomorfos precisam de protocolo específico de volume e nutrição hipercalórica para evoluir.", aoSelecionar:(s)=>{ s.biotipo="ectomorfo"; } },
+      { letra:"B", texto:"Mesomorfo — ganho músculo com facilidade e tenho corpo atlético",      pontos:10, tag:"mesomorfo",  ind:{ prontidao:10 },    insight:"Você tem a genética mais favorável — o protocolo vai potencializar ainda mais seu resultado.", aoSelecionar:(s)=>{ s.biotipo="mesomorfo"; } },
+      { letra:"C", texto:"Endomorfo — tenho tendência a acumular gordura e dificuldade de definir", pontos:15, tag:"endomorfo", ind:{ urgencia:10, acompanhamento:15 }, insight:"Endomorfos transformam com a estratégia certa de treino combinada com alimentação específica.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+      { letra:"D", texto:"Não sei identificar meu biotipo",                                       pontos:5,  tag:"sem-biotipo",ind:{ acompanhamento:15 }, insight:"Sem problema — o protocolo identifica e adapta tudo para o seu perfil automaticamente.", aoSelecionar:(s)=>{ s.biotipo=null; } },
     ],
   },
 
@@ -1006,6 +1061,7 @@ let STATE = {
   whatsapp: "",
   sexo: null,
   idadeFaixa: null,
+  biotipo: null,
   resultado: null,
   perfil: null,
   multi: { ...MULTI_INICIAL },
@@ -1327,6 +1383,120 @@ function determinarResultado() {
 }
 
 /* ============================================================
+   RESULTADO — BLOCO ANTES/DEPOIS + 30 DIAS
+============================================================ */
+const RESULTADOS_30D = {
+  ectomorfo: [
+    "Primeiros ganhos de massa muscular visíveis no espelho",
+    "Aumento de força nos movimentos compostos (5–10%)",
+    "Plano alimentar hipercalórico funcionando na sua rotina",
+    "Ganho de 1–2kg de massa limpa com o protocolo correto",
+    "Consistência real — sem perder dias sem saber o porquê",
+  ],
+  mesomorfo: [
+    "Definição muscular visivelmente mais acentuada",
+    "Ganho de força expressivo nos exercícios principais",
+    "Composição corporal melhorada sem perder massa",
+    "Evolução nos movimentos — mais controle e potência",
+    "Protocolo totalmente alinhado com sua genética favorável",
+  ],
+  endomorfo: [
+    "Redução de gordura visível — principalmente abdômen",
+    "Mais energia e disposição no dia a dia",
+    "Definição muscular emergindo com o deficit correto",
+    "Plano alimentar sem restrição extrema — sustentável",
+    "Ritmo metabólico acelerado com treino inteligente",
+  ],
+  default: [
+    "Corpo com menos gordura e mais definição visível",
+    "Aumento de força e disposição no dia a dia",
+    "Consistência real — sem começar e parar",
+    "Protocolo de treino e alimentação alinhados ao seu perfil",
+    "Confiança crescendo junto com os resultados",
+  ],
+};
+
+// QUIZ_CONFIG.imagens: URLs das imagens de antes/depois por biotipo e sexo.
+// Substitua os placeholders com suas URLs reais antes de publicar.
+const IMAGENS_TRANSFORMACAO = {
+  antes: {
+    masculino: {
+      ectomorfo:  "[URL_ANTES_MASCULINO_ECTOMORFO]",
+      mesomorfo:  "[URL_ANTES_MASCULINO_MESOMORFO]",
+      endomorfo:  "[URL_ANTES_MASCULINO_ENDOMORFO]",
+      default:    "[URL_ANTES_MASCULINO_DEFAULT]",
+    },
+    feminino: {
+      ectomorfo:  "[URL_ANTES_FEMININO_ECTOMORFO]",
+      mesomorfo:  "[URL_ANTES_FEMININO_MESOMORFO]",
+      endomorfo:  "[URL_ANTES_FEMININO_ENDOMORFO]",
+      default:    "[URL_ANTES_FEMININO_DEFAULT]",
+    },
+  },
+  depois: {
+    masculino: {
+      ectomorfo:  "[URL_DEPOIS_MASCULINO_ECTOMORFO]",
+      mesomorfo:  "[URL_DEPOIS_MASCULINO_MESOMORFO]",
+      endomorfo:  "[URL_DEPOIS_MASCULINO_ENDOMORFO]",
+      default:    "[URL_DEPOIS_MASCULINO_DEFAULT]",
+    },
+    feminino: {
+      ectomorfo:  "[URL_DEPOIS_FEMININO_ECTOMORFO]",
+      mesomorfo:  "[URL_DEPOIS_FEMININO_MESOMORFO]",
+      endomorfo:  "[URL_DEPOIS_FEMININO_ENDOMORFO]",
+      default:    "[URL_DEPOIS_FEMININO_DEFAULT]",
+    },
+  },
+};
+
+function gerarBlocoTransformacao(nome) {
+  const sexo    = STATE.sexo === "feminino" ? "feminino" : "masculino";
+  const biotipo = STATE.biotipo || "default";
+  const biotipoLabel = {
+    ectomorfo: "ectomorfo", mesomorfo: "mesomorfo", endomorfo: "endomorfo", default: null,
+  }[biotipo];
+
+  const resultados = RESULTADOS_30D[biotipo] || RESULTADOS_30D.default;
+
+  const urlAntes  = IMAGENS_TRANSFORMACAO.antes[sexo][biotipo]  || IMAGENS_TRANSFORMACAO.antes[sexo].default;
+  const urlDepois = IMAGENS_TRANSFORMACAO.depois[sexo][biotipo] || IMAGENS_TRANSFORMACAO.depois[sexo].default;
+
+  const imgAntes  = urlAntes.startsWith("[")
+    ? `<div class="antes-depois-img placeholder"><span>FOTO ANTES</span></div>`
+    : `<div class="antes-depois-img"><img src="${urlAntes}" alt="Antes" loading="lazy" /></div>`;
+  const imgDepois = urlDepois.startsWith("[")
+    ? `<div class="antes-depois-img placeholder" style="border-color:var(--cor-primaria)"><span style="color:var(--cor-primaria)">FOTO DEPOIS</span></div>`
+    : `<div class="antes-depois-img"><img src="${urlDepois}" alt="Depois" loading="lazy" /></div>`;
+
+  const biotipoTexto = biotipoLabel ? ` — protocolo <strong>${biotipoLabel}</strong>` : "";
+
+  const itens = resultados.map(r =>
+    `<li><span class="icone">✦</span>${r}</li>`
+  ).join("");
+
+  return `
+    <div class="transformacao-bloco">
+      <p class="transformacao-headline">
+        <span class="nome-destaque">${escapeHtml(nome)}</span>, olha — esse protocolo foi feito para o <strong>seu perfil${biotipoTexto}</strong>.<br><br>
+        Com consistência de <strong>30 dias</strong>, é isso que você vai conquistar:
+      </p>
+      <div class="antes-depois-grid">
+        <div class="antes-depois-card">
+          <p class="antes-depois-label antes">HOJE</p>
+          ${imgAntes}
+        </div>
+        <div class="antes-depois-card">
+          <p class="antes-depois-label depois">30 DIAS →</p>
+          ${imgDepois}
+        </div>
+      </div>
+      <p class="resultados-30d-titulo">✦ RESULTADOS QUE VOCÊ VAI ATINGIR</p>
+      <ul class="resultados-30d-lista">${itens}</ul>
+    </div>
+  `;
+}
+
+/* ============================================================
    RESULTADO — RENDERIZAR (ambas as telas)
 ============================================================ */
 function renderizarResultado() {
@@ -1338,6 +1508,9 @@ function renderizarResultado() {
     // Título dinâmico
     const tituloFn = TITULOS.consultoria[perfil] || TITULOS.consultoria.buscando_mudanca;
     $("titulo-consultoria").textContent = tituloFn(nome);
+
+    // Bloco antes/depois + 30 dias
+    $("transformacao-bloco-consultoria").innerHTML = gerarBlocoTransformacao(nome);
 
     // Diagnóstico dinâmico
     const diagFn = DIAGNOSTICOS.consultoria[perfil] || DIAGNOSTICOS.consultoria.buscando_mudanca;
@@ -1365,6 +1538,9 @@ function renderizarResultado() {
     // WA: título e diagnóstico dinâmicos
     const tituloFn = TITULOS.whatsapp[perfil] || TITULOS.whatsapp.buscando_mudanca;
     $("titulo-whatsapp").textContent = tituloFn(nome);
+
+    // Bloco antes/depois + 30 dias
+    $("transformacao-bloco-whatsapp").innerHTML = gerarBlocoTransformacao(nome);
 
     const diagFn = DIAGNOSTICOS.whatsapp[perfil] || DIAGNOSTICOS.whatsapp.buscando_mudanca;
     $("diagnostico-whatsapp").textContent = diagFn(nome, r, STATE);
@@ -1584,7 +1760,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-comecar").addEventListener("click", () => {
     STATE = {
       telaAtual: "quiz", score: 0, perguntaAtual: 0, perguntasFiltradas: [],
-      respostas: {}, nome: "", whatsapp: "", sexo: null, idadeFaixa: null,
+      respostas: {}, nome: "", whatsapp: "", sexo: null, idadeFaixa: null, biotipo: null,
       resultado: null, perfil: null, multi: { ...MULTI_INICIAL },
       clickouCTA: false, vioDownsell: false, tempoInicio: Date.now(),
       downsellTimer: null, _sessao: Date.now().toString(36),
