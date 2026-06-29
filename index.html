@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Diagnóstico de Transformação Física</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ============================================================
+       VARIÁVEIS DE DESIGN SYSTEM
+    ============================================================ */
+    :root {
+      --cor-fundo: #0a0a0a;
+      --cor-primaria: #00ff87;
+      --cor-secundaria: #00c96b;
+      --cor-acento: #ffffff;
+      --cor-texto: #e8e8e8;
+      --cor-texto-suave: #888888;
+      --cor-card: #141414;
+      --cor-borda: #1e1e1e;
+      --cor-perigo: #ff4757;
+      --cor-ouro: #ffd700;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --transition: 0.3s ease;
+      --max-width: 480px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      background: var(--cor-fundo);
+      color: var(--cor-texto);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+
+    #app {
+      width: 100%;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       TELAS
+    ============================================================ */
+    .tela {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 20px;
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      opacity: 0;
+      transform: translateX(30px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .tela.ativa { display: flex; opacity: 1; transform: translateX(0); position: relative; }
+    .tela.saindo { opacity: 0; transform: translateX(-30px); position: absolute; }
+
+    /* ============================================================
+       BARRA DE PROGRESSO
+    ============================================================ */
+    #barra-progresso-container {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: var(--cor-fundo); border-bottom: 1px solid var(--cor-borda);
+      padding: 10px 20px; display: none; align-items: center; gap: 12px;
+      max-width: var(--max-width); margin: 0 auto;
+    }
+    #barra-progresso-container.visivel { display: flex; }
+    #progresso-texto { font-family: var(--font-mono); font-size: 11px; color: var(--cor-primaria); white-space: nowrap; min-width: 32px; }
+    #barra-progresso-track { flex: 1; height: 3px; background: var(--cor-borda); overflow: hidden; }
+    #barra-progresso-fill {
+      height: 100%; background: linear-gradient(90deg, var(--cor-secundaria), var(--cor-primaria));
+      width: 0%; transition: width 0.4s ease; position: relative;
+    }
+    #barra-progresso-fill::after {
+      content: ''; position: absolute; right: 0; top: -2px;
+      width: 7px; height: 7px; background: var(--cor-primaria);
+      border-radius: 50%; box-shadow: 0 0 8px var(--cor-primaria);
+    }
+
+    /* ============================================================
+       SPLASH
+    ============================================================ */
+    #tela-splash { justify-content: space-between; padding-top: 60px; padding-bottom: 40px; }
+    #canvas-particulas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+    .splash-content { position: relative; z-index: 1; display: flex; flex-direction: column; }
+
+    .badge-destaque {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(0,255,135,0.08); border: 1px solid rgba(0,255,135,0.25);
+      padding: 6px 12px; font-family: var(--font-mono); font-size: 11px;
+      color: var(--cor-primaria); letter-spacing: 0.08em; text-transform: uppercase;
+      margin-bottom: 24px; width: fit-content;
+    }
+    .badge-dot { width: 6px; height: 6px; background: var(--cor-primaria); border-radius: 50%; animation: pulso 1.5s ease-in-out infinite; }
+    @keyframes pulso { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+    .splash-headline { font-family: var(--font-display); font-size: clamp(36px,10vw,52px); line-height: .95; color: var(--cor-acento); letter-spacing: .02em; margin-bottom: 20px; }
+    .splash-headline span { color: var(--cor-primaria); }
+    .splash-subheadline { font-size: 16px; color: var(--cor-texto-suave); font-weight: 400; line-height: 1.6; margin-bottom: 32px; }
+    .splash-stats { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+    .stat-item { font-size: 13px; color: var(--cor-texto-suave); display: flex; align-items: center; gap: 6px; }
+    .stat-numero { font-family: var(--font-mono); color: var(--cor-primaria); font-size: 13px; }
+
+    /* ============================================================
+       BOTÕES
+    ============================================================ */
+    .btn-primario {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; min-height: 56px; background: var(--cor-primaria); color: #000;
+      font-family: var(--font-display); font-size: 18px; letter-spacing: .06em;
+      border: none; cursor: pointer; text-decoration: none; transition: var(--transition);
+      position: relative; overflow: hidden; -webkit-font-smoothing: antialiased;
+    }
+    .btn-primario::before {
+      content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent); transition: left .5s ease;
+    }
+    .btn-primario:active::before { left: 100%; }
+    .btn-primario:active { transform: scale(.98); background: var(--cor-secundaria); }
+
+    .btn-secundario {
+      display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px;
+      background: transparent; color: var(--cor-texto-suave); font-family: var(--font-body);
+      font-size: 14px; border: 1px solid var(--cor-borda); cursor: pointer; text-decoration: none; transition: var(--transition);
+    }
+    .btn-secundario:active { border-color: var(--cor-primaria); color: var(--cor-primaria); }
+
+    .btn-link {
+      background: none; border: none; color: var(--cor-texto-suave); font-family: var(--font-body);
+      font-size: 13px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; transition: var(--transition);
+    }
+    .btn-link:active { color: var(--cor-primaria); }
+
+    /* ============================================================
+       QUIZ
+    ============================================================ */
+    #tela-quiz { padding-top: 70px; }
+
+    .quiz-modulo-label {
+      font-family: var(--font-mono); font-size: 10px; color: var(--cor-texto-suave);
+      letter-spacing: .12em; text-transform: uppercase; margin-bottom: 4px; opacity: .6;
+    }
+    .quiz-numero { font-family: var(--font-mono); font-size: 11px; color: var(--cor-primaria); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; }
+    .quiz-pergunta { font-family: var(--font-body); font-size: clamp(18px,5vw,22px); font-weight: 600; color: var(--cor-acento); line-height: 1.35; margin-bottom: 8px; }
+    .quiz-contexto { font-size: 14px; color: var(--cor-texto-suave); margin-bottom: 28px; font-style: italic; }
+    .opcoes-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+
+    .opcao-btn {
+      display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 56px;
+      padding: 14px 16px; background: var(--cor-card); border: 1px solid var(--cor-borda);
+      cursor: pointer; text-align: left; transition: border-color .2s ease, background .2s ease;
+      position: relative; overflow: hidden;
+    }
+    .opcao-btn::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+      background: rgba(0,255,135,.06); transition: width .3s ease;
+    }
+    .opcao-btn.selecionada { border-color: var(--cor-primaria); background: rgba(0,255,135,.06); }
+    .opcao-btn.selecionada::before { width: 100%; }
+    .opcao-btn:active { border-color: var(--cor-primaria); }
+
+    .opcao-letra {
+      display: flex; align-items: center; justify-content: center;
+      min-width: 26px; height: 26px; border: 1px solid var(--cor-borda);
+      font-family: var(--font-mono); font-size: 11px; color: var(--cor-texto-suave);
+      transition: var(--transition); flex-shrink: 0; margin-top: 1px;
+    }
+    .opcao-btn.selecionada .opcao-letra { border-color: var(--cor-primaria); background: var(--cor-primaria); color: #000; }
+    .opcao-texto { font-size: 15px; color: var(--cor-texto); font-weight: 400; line-height: 1.4; }
+    .opcao-btn.selecionada .opcao-texto { color: var(--cor-acento); }
+
+    /* Micro-insight após resposta */
+    #quiz-insight-wrap { min-height: 32px; margin-bottom: 8px; }
+    .quiz-insight-texto {
+      font-size: 13px; color: var(--cor-primaria); font-style: italic;
+      opacity: 0; transition: opacity .35s ease; line-height: 1.5;
+      padding: 6px 0; display: flex; align-items: center; gap: 8px;
+    }
+    .quiz-insight-texto.visivel { opacity: 1; }
+    .quiz-insight-texto::before { content: '›'; font-family: var(--font-mono); font-size: 14px; flex-shrink: 0; }
+
+    /* Indicador de sistema "aprendendo" */
+    .quiz-sistema-status {
+      display: flex; align-items: center; gap: 8px; margin-top: 8px;
+      font-family: var(--font-mono); font-size: 10px; color: var(--cor-texto-suave);
+      letter-spacing: .06em; opacity: 0; transition: opacity .3s ease;
+    }
+    .quiz-sistema-status.visivel { opacity: 1; }
+    .quiz-sistema-dot { width: 5px; height: 5px; background: var(--cor-primaria); border-radius: 50%; animation: pulso 1s infinite; }
+
+    /* ============================================================
+       CAPTURA DE DADOS
+    ============================================================ */
+    #tela-captura { justify-content: center; }
+    .captura-header { text-align: center; margin-bottom: 32px; }
+    .captura-icon { font-size: 40px; margin-bottom: 16px; }
+    .captura-titulo { font-family: var(--font-display); font-size: 32px; color: var(--cor-acento); letter-spacing: .03em; margin-bottom: 10px; }
+    .captura-subtitulo { font-size: 15px; color: var(--cor-texto-suave); line-height: 1.55; }
+
+    /* Preview das análises feitas */
+    .captura-analises {
+      background: var(--cor-card); border: 1px solid var(--cor-borda);
+      padding: 16px; margin-bottom: 24px;
+    }
+    .captura-analises-titulo { font-family: var(--font-mono); font-size: 10px; color: var(--cor-primaria); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+    .captura-analise-item {
+      display: flex; align-items: center; gap: 10px; font-size: 13px;
+      color: var(--cor-texto-suave); padding: 5px 0;
+    }
+    .captura-analise-check { color: var(--cor-primaria); font-size: 12px; }
+
+    .form-grupo { margin-bottom: 16px; }
+    .form-label { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--cor-primaria); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+    .form-input { width: 100%; height: 52px; background: var(--cor-card); border: 1px solid var(--cor-borda); color: var(--cor-acento); font-family: var(--font-body); font-size: 16px; padding: 0 16px; outline: none; transition: border-color .2s ease; -webkit-appearance: none; }
+    .form-input::placeholder { color: var(--cor-texto-suave); font-size: 15px; }
+    .form-input:focus { border-color: var(--cor-primaria); }
+    .form-input.erro { border-color: var(--cor-perigo); }
+    .form-erro-msg { font-size: 12px; color: var(--cor-perigo); margin-top: 6px; display: none; }
+    .form-nota { font-size: 12px; color: var(--cor-texto-suave); text-align: center; margin-top: 14px; line-height: 1.5; }
+
+    /* ============================================================
+       PROCESSANDO
+    ============================================================ */
+    #tela-processando { justify-content: center; align-items: center; text-align: center; }
+    .processando-icon { font-size: 48px; margin-bottom: 32px; animation: rotacao-suave 3s linear infinite; }
+    @keyframes rotacao-suave { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+    .processando-titulo { font-family: var(--font-display); font-size: 28px; color: var(--cor-acento); letter-spacing: .05em; margin-bottom: 32px; }
+    .processando-etapa { font-size: 14px; color: var(--cor-texto-suave); margin-bottom: 20px; min-height: 22px; transition: opacity .4s ease; font-family: var(--font-mono); letter-spacing: .02em; }
+    .processando-barra-track { width: 100%; height: 3px; background: var(--cor-borda); margin-bottom: 40px; position: relative; overflow: visible; }
+    .processando-barra-fill { height: 100%; background: linear-gradient(90deg,var(--cor-secundaria),var(--cor-primaria)); width: 0%; transition: width .9s ease; position: relative; }
+    .processando-barra-fill::after { content: ''; position: absolute; right: -4px; top: -4px; width: 11px; height: 11px; background: var(--cor-primaria); border-radius: 50%; box-shadow: 0 0 12px var(--cor-primaria),0 0 24px rgba(0,255,135,.4); }
+
+    .scan-linha { position: fixed; top: -4px; left: 0; right: 0; height: 4px; background: linear-gradient(90deg,transparent,var(--cor-primaria),transparent); box-shadow: 0 0 20px var(--cor-primaria); opacity: 0; z-index: 200; }
+    .scan-linha.ativa { animation: scan-down 4s ease-in-out; }
+    @keyframes scan-down { 0%{top:-4px;opacity:0} 5%{opacity:1} 95%{opacity:1} 100%{top:100vh;opacity:0} }
+
+    /* ============================================================
+       RESULTADO
+    ============================================================ */
+    .resultado-tela { padding-top: 40px; padding-bottom: 60px; }
+
+    .resultado-badge {
+      display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px;
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em;
+      text-transform: uppercase; margin-bottom: 20px;
+    }
+    .resultado-badge.ouro { background: rgba(255,215,0,.08); border: 1px solid rgba(255,215,0,.3); color: var(--cor-ouro); }
+    .resultado-badge.verde { background: rgba(0,255,135,.08); border: 1px solid rgba(0,255,135,.25); color: var(--cor-primaria); }
+
+    .resultado-titulo { font-family: var(--font-display); font-size: clamp(26px,7vw,36px); color: var(--cor-acento); line-height: 1.05; letter-spacing: .02em; margin-bottom: 16px; }
+    .resultado-titulo .destaque-verde { color: var(--cor-primaria); }
+    .resultado-titulo .destaque-ouro { color: var(--cor-ouro); }
+
+    /* Perfil psicológico chip (visível no resultado) */
+    .perfil-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--cor-borda); padding: 5px 10px;
+      font-family: var(--font-mono); font-size: 10px; color: var(--cor-texto-suave);
+      letter-spacing: .06em; text-transform: uppercase; margin-bottom: 16px;
+    }
+    .perfil-chip-dot { width: 5px; height: 5px; background: var(--cor-primaria); border-radius: 50%; }
+
+    .resultado-diagnostico {
+      font-size: 15px; color: var(--cor-texto); line-height: 1.7;
+      margin-bottom: 28px; padding: 20px; background: var(--cor-card);
+      border-left: 3px solid var(--cor-primaria);
+    }
+
+    /* Scores multi-dim visuais (no resultado) */
+    .scores-visuais { margin-bottom: 24px; }
+    .scores-visuais-titulo { font-family: var(--font-mono); font-size: 10px; color: var(--cor-texto-suave); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+    .score-linha { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .score-linha-label { font-size: 12px; color: var(--cor-texto-suave); min-width: 120px; }
+    .score-linha-track { flex: 1; height: 3px; background: var(--cor-borda); }
+    .score-linha-fill { height: 100%; background: var(--cor-primaria); transition: width 1s ease; }
+    .score-linha-valor { font-family: var(--font-mono); font-size: 11px; color: var(--cor-primaria); min-width: 28px; text-align: right; }
+
+    .bloqueios-titulo { font-family: var(--font-mono); font-size: 11px; color: var(--cor-primaria); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 16px; }
+
+    .bloqueio-card { display: flex; align-items: flex-start; gap: 14px; padding: 16px; background: var(--cor-card); border: 1px solid var(--cor-borda); margin-bottom: 10px; }
+    .bloqueio-icone { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+    .bloqueio-texto strong { display: block; font-size: 14px; color: var(--cor-acento); margin-bottom: 4px; }
+    .bloqueio-texto p { font-size: 13px; color: var(--cor-texto-suave); line-height: 1.5; }
+
+    .divisor { height: 1px; background: var(--cor-borda); margin: 28px 0; }
+
+    .preco-area { text-align: center; margin-bottom: 20px; }
+    .preco-de { font-family: var(--font-mono); font-size: 14px; color: var(--cor-texto-suave); text-decoration: line-through; margin-bottom: 4px; }
+    .preco-por { font-family: var(--font-display); font-size: 36px; color: var(--cor-primaria); letter-spacing: .03em; }
+    .preco-parcelado { font-size: 13px; color: var(--cor-texto-suave); margin-top: 4px; }
+    .preco-custo-dia { font-family: var(--font-mono); font-size: 12px; color: var(--cor-primaria); margin-top: 6px; }
+
+    .lista-beneficios { list-style: none; margin-bottom: 28px; }
+    .lista-beneficios li { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--cor-borda); font-size: 14px; color: var(--cor-texto); }
+    .lista-beneficios li:last-child { border-bottom: none; }
+    .lista-beneficios .check { color: var(--cor-primaria); font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+    .garantia-nota { font-size: 12px; color: var(--cor-texto-suave); text-align: center; line-height: 1.5; margin-top: 14px; }
+
+    /* ============================================================
+       DOWNSELL
+    ============================================================ */
+    #modal-downsell {
+      position: fixed; bottom: 0; left: 0; right: 0; background: #111;
+      border-top: 1px solid var(--cor-borda); padding: 24px 20px 32px;
+      z-index: 300; transform: translateY(100%); transition: transform .4s ease;
+      max-width: var(--max-width); margin: 0 auto;
+    }
+    #modal-downsell.visivel { transform: translateY(0); }
+    .downsell-fechar { position: absolute; top: 12px; right: 16px; background: none; border: none; color: var(--cor-texto-suave); font-size: 20px; cursor: pointer; line-height: 1; }
+    .downsell-titulo { font-family: var(--font-display); font-size: 22px; color: var(--cor-acento); letter-spacing: .03em; margin-bottom: 10px; }
+    .downsell-texto { font-size: 14px; color: var(--cor-texto-suave); line-height: 1.6; margin-bottom: 20px; }
+    .downsell-lista { list-style: none; margin-bottom: 20px; }
+    .downsell-lista li { font-size: 13px; color: var(--cor-texto); padding: 6px 0; display: flex; align-items: center; gap: 8px; }
+    .downsell-lista li::before { content: '→'; color: var(--cor-primaria); font-family: var(--font-mono); font-size: 12px; }
+    .downsell-btns { display: flex; flex-direction: column; gap: 10px; }
+
+    /* ============================================================
+       ADMIN
+    ============================================================ */
+    #tela-admin { padding: 24px 20px; }
+    .admin-titulo { font-family: var(--font-display); font-size: 28px; color: var(--cor-primaria); letter-spacing: .04em; margin-bottom: 20px; }
+    .admin-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 24px; }
+    .admin-stat-card { background: var(--cor-card); border: 1px solid var(--cor-borda); padding: 16px; }
+    .admin-stat-label { font-family: var(--font-mono); font-size: 10px; color: var(--cor-texto-suave); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+    .admin-stat-valor { font-family: var(--font-display); font-size: 28px; color: var(--cor-primaria); }
+    .admin-tabela-wrapper { overflow-x: auto; margin-bottom: 20px; }
+    .admin-tabela { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .admin-tabela th { font-family: var(--font-mono); font-size: 10px; color: var(--cor-primaria); text-transform: uppercase; letter-spacing: .06em; padding: 10px 8px; border-bottom: 1px solid var(--cor-borda); text-align: left; white-space: nowrap; }
+    .admin-tabela td { padding: 10px 8px; border-bottom: 1px solid var(--cor-borda); color: var(--cor-texto); white-space: nowrap; }
+    .admin-tabela tr:hover td { background: var(--cor-card); }
+    .tag-resultado { display: inline-block; padding: 2px 8px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; }
+    .tag-resultado.consultoria { background: rgba(255,215,0,.1); color: var(--cor-ouro); }
+    .tag-resultado.whatsapp { background: rgba(0,255,135,.1); color: var(--cor-primaria); }
+    .tag-perfil { font-size: 10px; color: var(--cor-texto-suave); font-family: var(--font-mono); }
+
+    /* ============================================================
+       TOAST
+    ============================================================ */
+    #toast {
+      position: fixed; bottom: 20px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--cor-perigo); color: #fff;
+      font-size: 13px; font-family: var(--font-body);
+      padding: 12px 20px; z-index: 999; transition: transform .3s ease;
+      white-space: nowrap; pointer-events: none;
+    }
+    #toast.visivel { transform: translateX(-50%) translateY(0); }
+
+    .glass-card { background: rgba(20,20,20,.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--cor-borda); }
+
+    /* ============================================================
+       UTILITÁRIOS
+    ============================================================ */
+    .mt-auto{margin-top:auto} .mt-8{margin-top:8px} .mt-16{margin-top:16px} .mt-24{margin-top:24px}
+    .mb-8{margin-bottom:8px} .mb-16{margin-bottom:16px} .mb-24{margin-bottom:24px}
+    .text-center{text-align:center} .color-suave{color:var(--cor-texto-suave)}
+    .color-primaria{color:var(--cor-primaria)} .font-mono{font-family:var(--font-mono)} .font-display{font-family:var(--font-display)}
+
+    @media(min-width:600px){ :root{--max-width:520px} .splash-headline{font-size:58px} }
+    @media(min-width:768px){ body{background:#050505} #app{box-shadow:0 0 60px rgba(0,255,135,.04);border-left:1px solid var(--cor-borda);border-right:1px solid var(--cor-borda)} }
+  </style>
+</head>
+<body>
+
+<canvas id="canvas-particulas"></canvas>
+<div id="toast"></div>
+<div class="scan-linha" id="scan-linha"></div>
+
+<div id="barra-progresso-container">
+  <span id="progresso-texto">0%</span>
+  <div id="barra-progresso-track"><div id="barra-progresso-fill"></div></div>
+</div>
+
+<div id="modal-downsell">
+  <button class="downsell-fechar" id="btn-fechar-downsell">✕</button>
+  <p class="font-mono" style="font-size:11px;color:var(--cor-perigo);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">⚡ ESPERA</p>
+  <h3 class="downsell-titulo" id="downsell-titulo">Você ainda não garantiu seu lugar.</h3>
+  <p class="downsell-texto" id="downsell-texto"></p>
+  <ul class="downsell-lista">
+    <li>4 reuniões individuais de alinhamento e evolução</li>
+    <li>Protocolo 100% personalizado para o SEU perfil</li>
+    <li>Plano alimentar + treino adaptados à sua rotina</li>
+    <li>Suporte direto via WhatsApp durante 45 dias</li>
+  </ul>
+  <div class="downsell-btns">
+    <button class="btn-primario" id="btn-downsell-sim">QUERO INVESTIR NA MINHA TRANSFORMAÇÃO →</button>
+    <button class="btn-link" id="btn-downsell-nao">Prefiro a comunidade de R$37,90</button>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- TELA 1 — SPLASH -->
+  <section class="tela ativa" id="tela-splash">
+    <div class="splash-content">
+      <div class="badge-destaque"><span class="badge-dot"></span>Diagnóstico gratuito</div>
+      <h1 class="splash-headline">SEU CORPO TEM UM<br><span>POTENCIAL</span> QUE VOCÊ<br>AINDA NÃO DESCOBRIU.</h1>
+      <p class="splash-subheadline">Responda algumas perguntas honestas e descubra exatamente o que está travando sua transformação — e o que fazer sobre isso agora.</p>
+      <div class="splash-stats">
+        <span class="stat-item">🔥 <span class="stat-numero">2.847</span> diagnósticos hoje</span>
+        <span class="stat-item">⏱ Menos de 3 minutos</span>
+      </div>
+    </div>
+    <div class="mt-auto">
+      <button class="btn-primario" id="btn-comecar">QUERO DESCOBRIR MEU POTENCIAL →</button>
+      <p class="form-nota mt-8">100% gratuito • Resultado personalizado</p>
+    </div>
+  </section>
+
+  <!-- TELA 2 — QUIZ -->
+  <section class="tela" id="tela-quiz">
+    <p class="quiz-modulo-label" id="quiz-modulo-label"></p>
+    <p class="quiz-numero" id="quiz-numero">PERGUNTA 1</p>
+    <h2 class="quiz-pergunta" id="quiz-pergunta"></h2>
+    <p class="quiz-contexto" id="quiz-contexto"></p>
+    <div class="opcoes-container" id="opcoes-container"></div>
+    <div id="quiz-insight-wrap">
+      <p class="quiz-insight-texto" id="quiz-insight"></p>
+    </div>
+    <div class="quiz-sistema-status" id="quiz-sistema-status">
+      <span class="quiz-sistema-dot"></span>
+      <span id="quiz-sistema-msg">Sistema analisando perfil...</span>
+    </div>
+  </section>
+
+  <!-- TELA 3 — CAPTURA -->
+  <section class="tela" id="tela-captura">
+    <div>
+      <div class="captura-header">
+        <div class="captura-icon">🎯</div>
+        <h2 class="captura-titulo">SEU DIAGNÓSTICO ESTÁ QUASE PRONTO.</h2>
+        <p class="captura-subtitulo">Para personalizar completamente o seu resultado, preciso de mais uma informação.</p>
+      </div>
+
+      <div class="captura-analises" id="captura-analises">
+        <p class="captura-analises-titulo">✓ análises concluídas</p>
+        <div id="captura-analises-lista"></div>
+      </div>
+
+      <div class="form-grupo">
+        <label class="form-label" for="input-nome">Como posso te chamar?</label>
+        <input class="form-input" id="input-nome" type="text" placeholder="Seu primeiro nome" autocomplete="given-name" />
+        <p class="form-erro-msg" id="erro-nome">Digite seu nome (mínimo 2 caracteres)</p>
+      </div>
+      <div class="form-grupo">
+        <label class="form-label" for="input-whatsapp">Seu WhatsApp</label>
+        <input class="form-input" id="input-whatsapp" type="tel" placeholder="(00) 00000-0000" autocomplete="tel" inputmode="numeric" />
+        <p class="form-erro-msg" id="erro-whatsapp">Digite um WhatsApp válido com DDD</p>
+      </div>
+      <p class="form-nota">🔒 Seus dados são 100% seguros. Não enviamos spam.</p>
+      <button class="btn-primario mt-24" id="btn-ver-diagnostico">VER MEU DIAGNÓSTICO PERSONALIZADO →</button>
+    </div>
+  </section>
+
+  <!-- TELA 4 — PROCESSANDO -->
+  <section class="tela" id="tela-processando">
+    <div class="processando-icon">⚡</div>
+    <h2 class="processando-titulo">ANALISANDO<br>SEU PERFIL</h2>
+    <p class="processando-etapa" id="processando-etapa">Iniciando análise...</p>
+    <div class="processando-barra-track" style="width:100%;max-width:280px;">
+      <div class="processando-barra-fill" id="processando-barra"></div>
+    </div>
+    <p class="font-mono" style="font-size:11px;color:var(--cor-texto-suave);letter-spacing:.06em;" id="processando-pct">0%</p>
+  </section>
+
+  <!-- TELA 5A — RESULTADO CONSULTORIA -->
+  <section class="tela resultado-tela" id="tela-resultado-consultoria">
+    <div class="resultado-badge ouro" id="badge-consultoria">⭐ PERFIL: CANDIDATO À TRANSFORMAÇÃO ACELERADA</div>
+    <div class="perfil-chip" id="perfil-chip-consultoria">
+      <span class="perfil-chip-dot"></span>
+      <span id="perfil-chip-texto">perfil identificado</span>
+    </div>
+    <h2 class="resultado-titulo" id="titulo-consultoria"></h2>
+    <div class="resultado-diagnostico" id="diagnostico-consultoria"></div>
+
+    <p class="bloqueios-titulo">⚠ SEUS 3 MAIORES BLOQUEIOS IDENTIFICADOS</p>
+    <div id="bloqueios-container"></div>
+
+    <div class="divisor"></div>
+
+    <div class="scores-visuais" id="scores-visuais"></div>
+
+    <div class="divisor"></div>
+
+    <div class="preco-area">
+      <p class="preco-de" id="preco-consultoria-de">De R$697</p>
+      <p class="preco-por" id="preco-consultoria-display">R$ 369</p>
+      <p class="preco-parcelado" id="parcelado-display">ou 10x de R$37,90</p>
+      <p class="preco-custo-dia">Menos de R$1,30 por dia — 45 dias de transformação real</p>
+    </div>
+
+    <button class="btn-primario" id="btn-cta-consultoria">QUERO MEU PROTOCOLO PERSONALIZADO →</button>
+
+    <div style="margin-top:16px;padding:16px;background:var(--cor-card);border:1px solid var(--cor-borda);">
+      <p style="font-size:13px;color:var(--cor-texto-suave);line-height:1.8;">
+        ✅ 45 dias de acompanhamento individual<br>
+        ✅ 4 reuniões de alinhamento e evolução<br>
+        ✅ Plano alimentar personalizado para sua rotina<br>
+        ✅ Treino personalizado para seu biotipo e disponibilidade<br>
+        ✅ Suporte direto via WhatsApp durante todo o processo
+      </p>
+    </div>
+    <p class="garantia-nota mt-16">🔒 Compra 100% segura • Resultado garantido ou reembolso total</p>
+  </section>
+
+  <!-- TELA 5B — RESULTADO WHATSAPP -->
+  <section class="tela resultado-tela" id="tela-resultado-whatsapp">
+    <div class="resultado-badge verde">💪 PERFIL: PRONTO PARA DAR O PRIMEIRO PASSO REAL</div>
+    <h2 class="resultado-titulo" id="titulo-whatsapp"></h2>
+    <div class="resultado-diagnostico" id="diagnostico-whatsapp"></div>
+
+    <p class="bloqueios-titulo">O QUE VOCÊ RECEBE NA COMUNIDADE</p>
+    <ul class="lista-beneficios">
+      <li><span class="check">✅</span> Treinos semanais adaptáveis a qualquer nível</li>
+      <li><span class="check">✅</span> Guias de alimentação sem dieta restritiva</li>
+      <li><span class="check">✅</span> Comunidade ativa que te motiva diariamente</li>
+      <li><span class="check">✅</span> Desafios mensais com acompanhamento</li>
+      <li><span class="check">✅</span> Suporte direto para dúvidas</li>
+    </ul>
+
+    <div class="preco-area">
+      <p class="preco-de" id="preco-wa-de">De R$97</p>
+      <p class="preco-por" id="preco-wa-display">R$37,90</p>
+      <p class="preco-parcelado">Acesso vitalício à comunidade</p>
+    </div>
+    <button class="btn-primario" id="btn-cta-whatsapp">ENTRAR NA COMUNIDADE AGORA →</button>
+    <p class="garantia-nota mt-16">🔒 Compra 100% segura • Suporte incluso</p>
+  </section>
+
+  <!-- TELA ADMIN -->
+  <section class="tela" id="tela-admin">
+    <h1 class="admin-titulo">PAINEL ADMIN</h1>
+    <div class="admin-stats" id="admin-stats"></div>
+    <button class="btn-primario mb-16" id="btn-exportar-csv" style="max-width:220px;">EXPORTAR CSV</button>
+    <div class="admin-tabela-wrapper">
+      <table class="admin-tabela" id="admin-tabela">
+        <thead>
+          <tr>
+            <th>Nome</th><th>WhatsApp</th><th>Score</th><th>Perfil</th>
+            <th>Resultado</th><th>CTA</th><th>Tempo</th><th>Data</th>
+          </tr>
+        </thead>
+        <tbody id="admin-tbody"></tbody>
+      </table>
+    </div>
+    <button class="btn-secundario mt-16" id="btn-limpar-leads">LIMPAR DADOS</button>
+  </section>
+
+</div><!-- /app -->
+
+<script>
+/* ============================================================
+   QUIZ_CONFIG — CONFIGURAÇÃO CENTRAL
+   Edite os placeholders antes de publicar.
+============================================================ */
+const QUIZ_CONFIG = {
+  marca: "[SEU NOME/MARCA AQUI]",               // [PLACEHOLDER]
+  checkout: {
+    consultoria: "[URL_LASTLINK_CONSULTORIA]",   // [PLACEHOLDER]
+    whatsapp:    "[URL_LASTLINK_GRUPO_WA]",      // [PLACEHOLDER]
+  },
+  whatsappContato: "5500000000000",              // [PLACEHOLDER] 55+DDD+número
+  precos: {
+    consultoriaDe:   "R$697",
+    consultoriaPor:  "R$ 369",
+    consultoriaParc: "10x de R$37,90",
+    custoDiario:     "R$1,30",
+    whatsappDe:      "R$97",
+    whatsappPor:     "R$37,90",
+  },
+  scores: {
+    consultoria: 70,  // score >= 70 → consultoria
+    whatsapp:    30,  // score 30-69 → comunidade | <30 → comunidade copy alternativa
+  },
+  downsellDelay: 30000,
+};
+
+/* ============================================================
+   MOTOR MULTI-DIMENSIONAL
+   Cada dimensão mede um aspecto psicológico independente.
+   Não são mostradas ao usuário — alimentam o algoritmo de perfil
+   e a geração do diagnóstico personalizado.
+============================================================ */
+const MULTI_INICIAL = {
+  urgencia:        0,  // quão urgente é a necessidade de mudar
+  autoestima:      0,  // impacto emocional/autoestima (pode ser negativo)
+  comprometimento: 0,  // disposição para agir
+  consistencia:    0,  // histórico e capacidade de manter
+  emocional:       0,  // profundidade do impacto emocional
+  financeiro:      0,  // capacidade/disposição de investir
+  risco:           0,  // risco de desistência
+  acompanhamento:  0,  // necessidade de suporte individual
+  prontidao:       0,  // prontidão para comprar/agir agora
+};
+
+/* ============================================================
+   BANCO DE PERGUNTAS
+   Cada opção tem:
+     pontos    → score legado (define consultoria/WA)
+     tag       → identifica a resposta para bloqueios dinâmicos
+     ind       → indicadores multi-dim { dimensao: valor }
+     insight   → texto breve que aparece após a seleção
+     aoSelecionar → callback opcional para setters demográficos
+============================================================ */
+const PERGUNTAS = [
+  /* ── PRÉ: Personalização demográfica ────────────────────── */
+  {
+    id: "p_sexo",
+    texto: "Para personalizar completamente o seu diagnóstico:",
+    contexto: "Com qual sexo você se identifica?",
+    modulo: "PRÉ",
+    moduloLabel: "PERSONALIZAÇÃO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", texto:"Masculino",           pontos:0, tag:"masculino", ind:{}, insight:null, aoSelecionar:(s)=>{ s.sexo="masculino"; } },
+      { letra:"B", texto:"Feminino",            pontos:0, tag:"feminino",  ind:{}, insight:null, aoSelecionar:(s)=>{ s.sexo="feminino"; } },
+      { letra:"C", texto:"Prefiro não informar",pontos:0, tag:"outro",     ind:{}, insight:null, aoSelecionar:(s)=>{ s.sexo="outro"; } },
+    ],
+  },
+  {
+    id: "p_idade",
+    texto: "Qual é a sua faixa etária?",
+    contexto: "",
+    modulo: "PRÉ",
+    moduloLabel: "PERSONALIZAÇÃO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", texto:"18 a 24 anos", pontos:0,  tag:"18-24", ind:{ prontidao:5 },  insight:"Fase ideal para construir uma base sólida.", aoSelecionar:(s)=>{ s.idadeFaixa="18-24"; } },
+      { letra:"B", texto:"25 a 34 anos", pontos:5,  tag:"25-34", ind:{ urgencia:5 },   insight:"Os 30 são a janela de ouro para resultados definitivos.", aoSelecionar:(s)=>{ s.idadeFaixa="25-34"; } },
+      { letra:"C", texto:"35 a 44 anos", pontos:10, tag:"35-44", ind:{ urgencia:10, acompanhamento:10 }, insight:"A estratégia certa faz cada vez mais diferença nessa faixa.", aoSelecionar:(s)=>{ s.idadeFaixa="35-44"; } },
+      { letra:"D", texto:"45 anos ou mais",pontos:10,tag:"45+",  ind:{ urgencia:10, acompanhamento:15 }, insight:"Personalização não é opcional aqui — é essencial.", aoSelecionar:(s)=>{ s.idadeFaixa="45+"; } },
+    ],
+  },
+
+  /* ── MÓDULO A: Situação atual ───────────────────────────── */
+  {
+    id: "p1",
+    texto: "Há quanto tempo você tenta mudar seu corpo e não consegue o resultado que quer?",
+    contexto: "Seja honesto — essa resposta define tudo.",
+    modulo: "A",
+    moduloLabel: "HISTÓRICO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", texto:"Menos de 3 meses — sou iniciante",                          pontos:5,  tag:"iniciante",  ind:{ prontidao:8, risco:5 },                           insight:"Perfeito momento para construir certo desde o início." },
+      { letra:"B", texto:"6 meses a 1 ano — já tentei algumas coisas",                pontos:15, tag:"medio",      ind:{ urgencia:10, risco:10 },                          insight:"Tempo suficiente para entender o que não funciona. Isso é valioso." },
+      { letra:"C", texto:"1 a 3 anos — já fiz de tudo e nada funciona de verdade",    pontos:25, tag:"frustrado",  ind:{ urgencia:20, risco:15, acompanhamento:15 },       insight:"Ano após ano tentando revela que o problema não é você — é o método." },
+      { letra:"D", texto:"Mais de 3 anos — estou cansado de começar e parar",         pontos:35, tag:"esgotado",   ind:{ urgencia:30, risco:20, acompanhamento:25, autoestima:-10 }, insight:"Mais de 3 anos carregando isso. Algo precisa mudar de verdade agora." },
+    ],
+  },
+  {
+    id: "p2",
+    texto: "Quando você se olha no espelho hoje, o que passa pela sua cabeça?",
+    contexto: "",
+    modulo: "A",
+    moduloLabel: "AUTOESTIMA",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", texto:"Estou satisfeito, só quero melhorar um pouco",              pontos:5,  tag:"satisfeito", ind:{ prontidao:5 },                                    insight:"Bom ponto de partida — a melhoria contínua é o caminho." },
+      { letra:"B", texto:"Me incomoda mas consigo ignorar",                            pontos:15, tag:"incomoda",   ind:{ autoestima:-5, urgencia:10 },                     insight:"Ignorar o incômodo tem um custo emocional que se acumula." },
+      { letra:"C", texto:"Me afeta mais do que gosto de admitir",                     pontos:25, tag:"afeta",      ind:{ autoestima:-15, emocional:20, urgencia:15 },      insight:"Perceber que te afeta é o primeiro passo para mudar de verdade." },
+      { letra:"D", texto:"É uma das primeiras coisas que penso quando acordo",        pontos:40, tag:"obcessao",   ind:{ autoestima:-25, emocional:35, urgencia:25, acompanhamento:20 }, insight:"Quando ocupa seus primeiros pensamentos do dia — é hora de agir." },
+    ],
+  },
+  {
+    id: "p3",
+    texto: "Qual é o maior obstáculo que te impede de ter o corpo que você quer?",
+    contexto: "",
+    modulo: "A",
+    moduloLabel: "OBSTÁCULO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", texto:"Falta de tempo",                                             pontos:10, tag:"tempo",        ind:{ risco:10, acompanhamento:10 },                  insight:"Tempo é gerenciável. O que falta é um sistema eficiente para a sua rotina." },
+      { letra:"B", texto:"Não sei por onde começar / falta de orientação",            pontos:20, tag:"orientacao",   ind:{ acompanhamento:20, prontidao:10 },              insight:"Sem direção clara, qualquer esforço é energia desperdiçada." },
+      { letra:"C", texto:"Já comecei várias vezes mas não mantenho consistência",     pontos:30, tag:"consistencia", ind:{ consistencia:-20, risco:20, acompanhamento:25 },insight:"Consistência não nasce de disciplina. Nasce de um método que se encaixa na sua vida." },
+      { letra:"D", texto:"Sinto que meu corpo não responde mais ao que faço",         pontos:35, tag:"resposta",     ind:{ urgencia:20, acompanhamento:30, risco:15 },     insight:"Quando o corpo para de responder, a estratégia precisa evoluir junto." },
+    ],
+  },
+
+  /* ── MÓDULO B: Comprometimento e motivação ──────────────── */
+  {
+    id: "p4",
+    texto: "Se você soubesse exatamente o que fazer, com quanto comprometimento estaria disposto a seguir?",
+    contexto: "",
+    modulo: "B",
+    moduloLabel: "COMPROMETIMENTO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", texto:"Faria o que der, sem pressão",                              pontos:5,  tag:"baixo",  ind:{ comprometimento:5, risco:15 },                        insight:"Flexibilidade também é uma estratégia válida." },
+      { letra:"B", texto:"Me dedicaria com consistência, mas precisaria de flexibilidade",pontos:20,tag:"medio",ind:{ comprometimento:20, risco:5 },                      insight:"Consistência com flexibilidade é o equilíbrio que sustenta resultados reais." },
+      { letra:"C", texto:"Estaria 100% comprometido — quero resultado real",          pontos:40, tag:"alto",   ind:{ comprometimento:40, prontidao:20 },                  insight:"Esse comprometimento, direcionado corretamente, gera resultados extraordinários." },
+      { letra:"D", texto:"Faria qualquer coisa, estou desesperado para mudar",        pontos:50, tag:"maximo", ind:{ comprometimento:50, urgencia:20, prontidao:25 },     insight:"Essa urgência, direcionada com método, é o maior combustível que existe." },
+    ],
+  },
+  {
+    id: "p5",
+    texto: "Se você conquistasse o corpo que deseja, qual dessas mudanças teria maior impacto na sua vida?",
+    contexto: "Escolha a que ressoa mais com você.",
+    modulo: "B",
+    moduloLabel: "MOTIVAÇÃO REAL",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", texto:"Me sentir bem comigo mesmo e ter mais energia no dia a dia",pontos:15, tag:"autoestima",     ind:{ emocional:15, comprometimento:10 },            insight:"Energia e autoestima mudam tudo — trabalho, relacionamentos, foco." },
+      { letra:"B", texto:"Ter mais confiança no trabalho, socialmente e em fotos",   pontos:25, tag:"confianca",      ind:{ emocional:20, comprometimento:15, autoestima:10 }, insight:"Confiança projetada transforma oportunidades — não só a aparência." },
+      { letra:"C", texto:"Melhorar meus relacionamentos e me sentir atraente",       pontos:35, tag:"relacionamentos", ind:{ emocional:30, comprometimento:20, autoestima:15 }, insight:"O impacto vai muito além do espelho — toca cada relação na sua vida." },
+      { letra:"D", texto:"Mudar completamente — é o que está me impedindo de ser quem quero ser",pontos:50,tag:"identidade",ind:{ emocional:40, comprometimento:30, urgencia:20, autoestima:20 }, insight:"Isso é mais profundo que estética. É identidade. É sobre quem você quer ser." },
+    ],
+  },
+  {
+    id: "p6",
+    texto: "Você já investiu dinheiro em alguma tentativa de mudar seu corpo antes?",
+    contexto: "",
+    modulo: "B",
+    moduloLabel: "HISTÓRICO FINANCEIRO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", texto:"Não — nunca investi nada",                                  pontos:5,  tag:"nunca",  ind:{ financeiro:5, prontidao:5 },                          insight:"Esse pode ser o investimento que muda tudo." },
+      { letra:"B", texto:"Sim, academia ou app (menos de R$100/mês)",                 pontos:15, tag:"basico", ind:{ financeiro:15, consistencia:-5 },                     insight:"Academia sozinha raramente resolve — falta a camada de personalização." },
+      { letra:"C", texto:"Sim, personal trainer ou nutricionista",                    pontos:30, tag:"medio",  ind:{ financeiro:25, acompanhamento:10, urgencia:10 },      insight:"Você já entendeu que orientação faz diferença. Faltou o método certo." },
+      { letra:"D", texto:"Sim, já gastei mais de R$500 tentando e nada funcionou como devia",pontos:45,tag:"alto",ind:{ financeiro:35, urgencia:20, acompanhamento:20, risco:10 }, insight:"Esse histórico mostra que você leva isso a sério — e merece resultados à altura." },
+    ],
+  },
+
+  /* ── MÓDULO C: Qualificação (score > 40) ────────────────── */
+  {
+    id: "p7",
+    texto: "Se existisse um protocolo personalizado que garantisse resultado, quanto você estaria disposto a investir por mês?",
+    contexto: "",
+    modulo: "C",
+    moduloLabel: "INVESTIMENTO",
+    condicao: (s) => s.score > 40,
+    opcoes: [
+      { letra:"A", texto:"Menos de R$50 — precisa ser acessível",                    pontos:5,  tag:"fin-baixo",   ind:{ financeiro:5 },   insight:null },
+      { letra:"B", texto:"Até R$150 — estou aberto a investir moderadamente",        pontos:20, tag:"fin-medio",   ind:{ financeiro:20 },  insight:null },
+      { letra:"C", texto:"Até R$400 — se for sério, eu invisto",                    pontos:45, tag:"fin-alto",    ind:{ financeiro:40, prontidao:15 }, insight:"Quem investe no protocolo certo recupera esse valor em confiança e resultados." },
+      { letra:"D", texto:"O valor não é o problema — quero resultado de verdade",    pontos:65, tag:"fin-premium", ind:{ financeiro:60, prontidao:30, comprometimento:20 }, insight:"Essa mentalidade é o que separa quem tenta de quem transforma." },
+    ],
+  },
+  {
+    id: "p8",
+    texto: "Com que frequência você consegue treinar por semana atualmente?",
+    contexto: "",
+    modulo: "C",
+    moduloLabel: "NÍVEL ATUAL",
+    condicao: (s) => s.score > 40,
+    opcoes: [
+      { letra:"A", texto:"Nenhuma — estou sedentário no momento",                    pontos:10, tag:"sedentario",  ind:{ risco:15, acompanhamento:20 },            insight:"Do zero ao resultado — com o protocolo certo, a progressão surpreende." },
+      { letra:"B", texto:"1 a 2 vezes — começo e paro",                             pontos:20, tag:"irregular",   ind:{ consistencia:-10, risco:10, acompanhamento:15 }, insight:"Treinar e parar é mais desgastante do que treinar com consistência." },
+      { letra:"C", texto:"3 a 4 vezes — tenho certa consistência",                  pontos:30, tag:"consistente", ind:{ consistencia:15, risco:5 },               insight:"Você já tem o hábito. Falta afinar a estratégia." },
+      { letra:"D", texto:"5+ vezes — treino mas não estou evoluindo",               pontos:40, tag:"ativo",       ind:{ consistencia:20, urgencia:15, acompanhamento:25 }, insight:"Treinar muito sem evolução é o sinal mais claro de que a estratégia precisa mudar." },
+    ],
+  },
+
+  /* ── MÓDULO D: Emocional profundo (score > 60) ──────────── */
+  {
+    id: "p9",
+    texto: "O que você sente quando alguém faz um comentário sobre seu corpo — seja elogio ou crítica?",
+    contexto: "",
+    modulo: "D",
+    moduloLabel: "IMPACTO EMOCIONAL",
+    condicao: (s) => s.score > 60,
+    opcoes: [
+      { letra:"A", texto:"Fico indiferente",                                          pontos:5,  tag:"indiferente",  ind:{ emocional:5 },                     insight:"Essa indiferença pode ser uma forma de proteção. Vamos observar." },
+      { letra:"B", texto:"Elogio me agrada, crítica não me afeta muito",             pontos:15, tag:"equilibrado",  ind:{ emocional:10 },                    insight:"Equilíbrio saudável — e ainda há espaço para evoluir." },
+      { letra:"C", texto:"Crítica me afeta mais do que deveria",                     pontos:30, tag:"sensivel",     ind:{ emocional:25, autoestima:-10 },    insight:"Essa sensibilidade é válida e mais comum do que parece." },
+      { letra:"D", texto:"Penso nisso por dias — mexe com minha autoestima de verdade",pontos:50,tag:"impacto-alto",ind:{ emocional:40, autoestima:-20, acompanhamento:20 }, insight:"Quando palavras ficam dias na cabeça, o trabalho vai além do físico." },
+    ],
+  },
+  {
+    id: "p10",
+    texto: "Você já deixou de ir a algum evento ou situação social por causa de como se sente com seu corpo?",
+    contexto: "",
+    modulo: "D",
+    moduloLabel: "IMPACTO NA VIDA",
+    condicao: (s) => s.score > 60,
+    opcoes: [
+      { letra:"A", texto:"Nunca aconteceu",                                           pontos:0,  tag:"nunca",        ind:{ emocional:0 },                     insight:"Isso mostra uma base de resiliência importante." },
+      { letra:"B", texto:"Uma ou duas vezes",                                         pontos:15, tag:"raramente",    ind:{ emocional:15, autoestima:-5 },     insight:"Mesmo poucas vezes, o custo emocional é real." },
+      { letra:"C", texto:"Já aconteceu algumas vezes",                               pontos:30, tag:"algumas-vezes", ind:{ emocional:25, autoestima:-15 },   insight:"Cada situação evitada tem um custo que se acumula silenciosamente." },
+      { letra:"D", texto:"Sim, mais vezes do que gosto de admitir",                  pontos:55, tag:"frequente",    ind:{ emocional:40, autoestima:-25, acompanhamento:25, urgencia:20 }, insight:"Essa limitação afeta muito mais áreas da sua vida do que parece." },
+    ],
+  },
+  {
+    id: "p11",
+    texto: "O que você diria para você mesmo daqui a 1 ano, se nada mudar?",
+    contexto: "",
+    modulo: "D",
+    moduloLabel: "VISÃO DE FUTURO",
+    condicao: (s) => s.score > 60,
+    opcoes: [
+      { letra:"A", texto:"Acho que estaria bem do mesmo jeito",                       pontos:5,  tag:"resignado",    ind:{ urgencia:5 },                      insight:"Resignação é confortável. Mas não é onde você quer estar." },
+      { letra:"B", texto:"Me sentiria um pouco frustrado comigo mesmo",              pontos:20, tag:"frustrado-fut", ind:{ urgencia:15, emocional:10 },       insight:"Frustração consigo mesmo, quando direcionada, é um combustível poderoso." },
+      { letra:"C", texto:"Me sentiria profundamente decepcionado — isso precisa mudar",pontos:45,tag:"decepcionado", ind:{ urgencia:30, emocional:20, prontidao:20 }, insight:"Decepção profunda é o sinal mais claro de que a mudança é necessária agora." },
+      { letra:"D", texto:"Seria inaceitável — não posso continuar assim por mais um ano",pontos:70,tag:"urgente",   ind:{ urgencia:45, prontidao:35, comprometimento:25 }, insight:"Esse senso de urgência, aliado ao método certo, vai fazer tudo diferente." },
+    ],
+  },
+
+  /* ── MÓDULO E: Objetivo (score <= 40) ───────────────────── */
+  {
+    id: "p12",
+    texto: "Qual é o seu objetivo principal nesse momento?",
+    contexto: "",
+    modulo: "E",
+    moduloLabel: "OBJETIVO",
+    condicao: (s) => s.score <= 40,
+    opcoes: [
+      { letra:"A", texto:"Perder gordura e definir o corpo",                          pontos:15, tag:"emagrecer",    ind:{ prontidao:10 }, insight:"Definição exige estratégia de treino e nutrição alinhadas." },
+      { letra:"B", texto:"Ganhar massa muscular e força",                             pontos:15, tag:"hipertrofia",  ind:{ prontidao:10 }, insight:"Ganho muscular real exige protocolo progressivo e consistência." },
+      { letra:"C", texto:"Melhorar saúde, disposição e qualidade de vida",           pontos:10, tag:"saude",        ind:{ prontidao:8 },  insight:"Saúde é o fundamento. Tudo o mais vem como consequência." },
+      { letra:"D", texto:"Tudo isso junto — quero uma transformação completa",       pontos:25, tag:"total",        ind:{ prontidao:15, comprometimento:10 }, insight:"Transformação completa exige uma abordagem completa. Você está no lugar certo." },
+    ],
+  },
+];
+
+/* ============================================================
+   BANCO DE BLOQUEIOS DINÂMICOS
+   Mapeados por tag das respostas de maior pontuação.
+============================================================ */
+const BLOQUEIOS = {
+  "esgotado":     { icone:"🔄", titulo:"Síndrome do Recomeço", desc:"Você tenta, para e recomeça — e cada ciclo desgasta mais sua motivação. Isso não é falta de força de vontade. É falta de método personalizado." },
+  "frustrado":    { icone:"🎯", titulo:"Esforço sem Direção", desc:"Você se esforça, mas sem um sistema desenhado para o SEU perfil, qualquer esforço é energia desperdiçada no caminho errado." },
+  "obcessao":     { icone:"🧠", titulo:"Sobrecarga Mental", desc:"O pensamento constante sobre o corpo consome energia mental que deveria estar em outras áreas. Isso afeta desempenho, sono e relacionamentos." },
+  "afeta":        { icone:"💭", titulo:"Autoestima Comprometida", desc:"A insatisfação com o corpo está criando um ruído de fundo que drena sua confiança silenciosamente todos os dias." },
+  "consistencia": { icone:"📅", titulo:"Quebra de Consistência", desc:"Você sabe o que fazer, mas não consegue manter. A solução não é mais disciplina — é um sistema que funciona com a sua rotina real." },
+  "orientacao":   { icone:"🗺️", titulo:"Ausência de Protocolo", desc:"Sem um caminho claro e personalizado, você fica preso no ciclo de tentar coisas aleatórias que nunca geram resultado duradouro." },
+  "tempo":        { icone:"⏳", titulo:"Eficiência vs. Tempo", desc:"O problema não é tempo — é eficiência. Com o protocolo certo, 40 minutos focados superam 2 horas perdidas sem estratégia." },
+  "resposta":     { icone:"🔬", titulo:"Platô Metabólico", desc:"Seu corpo se adaptou às estratégias genéricas. Você precisa de um protocolo que quebre essa estagnação com progressão inteligente." },
+  "identidade":   { icone:"✨", titulo:"Impacto Total na Vida", desc:"Você já sabe que isso vai além do corpo — é sobre a versão de você mesmo que quer apresentar ao mundo." },
+  "impacto-alto": { icone:"💥", titulo:"Peso Emocional Acumulado", desc:"Os comentários sobre seu corpo ficam dias na cabeça. Isso muda quando sua aparência começa a refletir como você se sente por dentro." },
+  "urgente":      { icone:"⚡", titulo:"Ponto de Virada", desc:"Você já sabe que mais um ano igual não é opção. Esse senso de urgência, direcionado com método, é o que vai mudar tudo desta vez." },
+  "frequente":    { icone:"🚫", titulo:"Situações Evitadas", desc:"Cada evento ou situação evitada por causa do corpo tem um custo emocional real. Essa limitação afeta mais áreas da vida do que parece." },
+  "ativo":        { icone:"📈", titulo:"Esforço sem Progressão", desc:"Você treina consistentemente mas o corpo parou de responder. Isso exige uma mudança de estratégia, não de volume." },
+  "alto":         { icone:"💰", titulo:"Investimento sem Retorno", desc:"Você já investiu mais de R$500 tentando e não obteve o resultado esperado. Isso não é azar — é falta de personalização real." },
+  "default1":     { icone:"🔒", titulo:"Padrão Sabotador", desc:"Existe um ciclo invisível que faz você repetir os mesmos erros. Identificá-lo é o primeiro passo para quebrá-lo definitivamente." },
+  "default2":     { icone:"📊", titulo:"Estratégia Errada para Seu Perfil", desc:"O que funciona para outros pode não funcionar para você. Seu corpo, rotina e histórico são únicos e exigem um protocolo único." },
+  "default3":     { icone:"🏗️", titulo:"Pilares Desalinhados", desc:"Sem treino, alimentação e recuperação alinhados ao seu estilo de vida, qualquer resultado é temporário e frágil." },
+};
+
+/* ============================================================
+   PERFIS PSICOLÓGICOS
+   Mapeiam para copy de diagnóstico personalizada.
+   Nunca são mostrados diretamente ao usuário.
+============================================================ */
+const PERFIS_LABEL = {
+  frustrado_veterano:   "Experiente buscando o método certo",
+  atleta_estagnado:     "Consistente em busca de progressão",
+  bloqueio_emocional:   "Transformação de dentro para fora",
+  pronto_para_agir:     "No ponto de virada",
+  consistencia_zero:    "Potencial sem sistema",
+  iniciante_decidido:   "Começo com mentalidade certa",
+  buscando_mudanca:     "Pronto para a próxima fase",
+};
+
+/* ============================================================
+   DIAGNÓSTICOS DINÂMICOS POR PERFIL
+   Gerados dinamicamente com nome e dados das respostas.
+   Escritos em voz de especialista humano, nunca genérico.
+============================================================ */
+const DIAGNOSTICOS = {
+  consultoria: {
+    frustrado_veterano: (nome, r, s) => {
+      const tempo = r.p1 ? r.p1.texto.split("—")[0].trim().toLowerCase() : "anos";
+      return `${nome}, você já caminhou mais do que a maioria. Investiu tempo, energia, dinheiro. Tentou sozinho, com personal, com dieta. E mesmo assim chegou até aqui — o que mostra que você não desistiu.\n\nIsso não é fraqueza. É evidência de algo mais profundo: o problema nunca foi sua dedicação. Foi a falta de um método construído especificamente para o SEU histórico, o SEU corpo e a SUA rotina.\n\nA consultoria existe para resolver exatamente isso — com personalização real, não genérica.`;
+    },
+    atleta_estagnado: (nome) =>
+      `${nome}, você treina. Isso já coloca você à frente de 90% das pessoas. Mas quando o corpo para de responder, isso é um sinal claro: a estratégia precisa evoluir junto com você.\n\nTreino sem periodização alinhada à alimentação e recuperação cria um teto invisível. Você bateu nesse teto.\n\nA consultoria vai identificar exatamente o que está travando sua progressão e construir o protocolo que vai quebrá-la.`,
+    bloqueio_emocional: (nome, r, s) => {
+      const impacto = r.p5 ? r.p5.texto.toLowerCase() : "sua vida";
+      return `${nome}, o que você compartilhou vai além do físico. A insatisfação com o corpo está pesando na sua autoestima, nas suas relações e no seu dia a dia.\n\nIsso é mais comum do que parece — mas não precisa continuar assim.\n\nA transformação física não é apenas sobre o espelho. É sobre como você se sente quando entra em um ambiente, como você projeta confiança, como você se vê. A consultoria trabalha essa transformação de dentro para fora.`;
+    },
+    pronto_para_agir: (nome) =>
+      `${nome}, você está em um ponto de virada. Tem clareza do que quer, está disposto a fazer o que for necessário e sabe que mais do mesmo não vai funcionar.\n\nEsse é o perfil exato de quem transforma quando encontra o protocolo certo.\n\nA consultoria vai canalizar essa disposição com método, personalização e acompanhamento — para que dessa vez seja diferente de verdade.`,
+    consistencia_zero: (nome, r) => {
+      const obstaculo = r.p3 ? r.p3.texto.toLowerCase() : "manter a consistência";
+      return `${nome}, você sabe o que precisa fazer. O problema não é conhecimento — é manter.\n\nE manter sem um sistema que se adapte à sua rotina, sem acompanhamento, sem pequenas vitórias que criem momentum... é quase impossível.\n\nA consultoria foi construída em cima da neurociência da consistência. Vamos criar hábitos que funcionam com a sua vida — não contra ela.`;
+    },
+    iniciante_decidido: (nome) =>
+      `${nome}, você está começando — mas com a mentalidade certa. E isso muda tudo.\n\nA maioria perde meses tentando no escuro antes de buscar orientação especializada. Você está fazendo isso agora, no início. Isso muda completamente o seu trajeto.\n\nComeçar certo significa não desperdiçar tempo nem energia com o que não funciona para o seu perfil.`,
+    buscando_mudanca: (nome, r) => {
+      const motivacao = r.p5 ? `Você revelou que o maior impacto seria ${r.p5.texto.toLowerCase()}.` : "";
+      return `${nome}, com base nas suas respostas, fica claro que você quer mudar de verdade — e está pronto para receber a orientação certa para isso.\n\n${motivacao}\n\nO que tem faltado não é força de vontade — é um sistema personalizado para o SEU perfil. A consultoria vai construir esse sistema junto com você, do zero.`;
+    },
+  },
+  whatsapp: {
+    frustrado_veterano: (nome) =>
+      `${nome}, você já tentou antes. E essa experiência — mesmo frustrante — significa que você sabe o que não funciona. Isso é mais valioso do que parece.\n\nA comunidade vai te dar o ambiente e as ferramentas certas para transformar esse histórico em aprendizado real — com orientação, exemplos práticos e pessoas que entendem o que você está passando.`,
+    atleta_estagnado: (nome) =>
+      `${nome}, você já tem o hábito do treino — e isso é raro. A comunidade vai ajudar a dar mais direção e estratégia a essa consistência que você já construiu.`,
+    bloqueio_emocional: (nome) =>
+      `${nome}, a comunidade certa faz toda a diferença. Não é só sobre treino — é sobre ter pessoas que entendem o que você está passando e te motivam a continuar todos os dias.`,
+    pronto_para_agir: (nome) =>
+      `${nome}, você tem disposição. A comunidade vai te dar o ambiente e os recursos certos para canalizar essa energia em resultados reais e consistentes.`,
+    consistencia_zero: (nome) =>
+      `${nome}, consistência nasce dentro de uma comunidade. Ter pessoas que cobram, motivam e compartilham a jornada muda completamente o padrão de começar e parar.`,
+    iniciante_decidido: (nome) =>
+      `${nome}, você está no lugar certo. A comunidade tem tudo que você precisa para começar com o pé direito — sem achismo, sem perder tempo com o que não funciona.`,
+    buscando_mudanca: (nome) =>
+      `${nome}, você está consciente do que precisa mudar. A comunidade vai te dar as ferramentas e o ambiente para transformar essa consciência em ação consistente — com suporte diário.`,
+  },
+};
+
+/* ============================================================
+   TÍTULOS DINÂMICOS POR PERFIL
+============================================================ */
+const TITULOS = {
+  consultoria: {
+    frustrado_veterano:   (nome) => `${nome}, a resposta que você buscou por anos está aqui.`,
+    atleta_estagnado:     (nome) => `${nome}, você treina. Agora é hora de evoluir.`,
+    bloqueio_emocional:   (nome) => `${nome}, a transformação começa de dentro.`,
+    pronto_para_agir:     (nome) => `${nome}, você está no ponto de virada.`,
+    consistencia_zero:    (nome) => `${nome}, consistência não é força de vontade. É método.`,
+    iniciante_decidido:   (nome) => `${nome}, começar certo muda tudo.`,
+    buscando_mudanca:     (nome) => `${nome}, você tem tudo para ter resultados extraordinários.`,
+  },
+  whatsapp: {
+    frustrado_veterano:   (nome) => `${nome}, agora com o ambiente certo.`,
+    atleta_estagnado:     (nome) => `${nome}, consistência com direção.`,
+    bloqueio_emocional:   (nome) => `${nome}, você não precisa fazer isso sozinho.`,
+    pronto_para_agir:     (nome) => `${nome}, você está pronto para dar o próximo passo.`,
+    consistencia_zero:    (nome) => `${nome}, a comunidade vai mudar seu padrão.`,
+    iniciante_decidido:   (nome) => `${nome}, começando do jeito certo.`,
+    buscando_mudanca:     (nome) => `${nome}, você está no caminho certo.`,
+  },
+};
+
+/* ============================================================
+   CTAs PERSONALIZADOS POR PERFIL (consultoria)
+============================================================ */
+const CTAS_CONSULTORIA = {
+  frustrado_veterano:   "QUERO O MÉTODO QUE VAI FUNCIONAR DESTA VEZ →",
+  atleta_estagnado:     "QUERO EVOLUIR ALÉM DO MEU LIMITE ATUAL →",
+  bloqueio_emocional:   "QUERO MINHA TRANSFORMAÇÃO COMPLETA →",
+  pronto_para_agir:     "ESTOU PRONTO — QUERO COMEÇAR AGORA →",
+  consistencia_zero:    "QUERO O SISTEMA QUE VAI ME MANTER CONSISTENTE →",
+  iniciante_decidido:   "QUERO COMEÇAR DA FORMA CERTA →",
+  buscando_mudanca:     "QUERO MEU PROTOCOLO PERSONALIZADO →",
+};
+
+/* ============================================================
+   MENSAGENS DE PROCESSAMENTO DINÂMICAS
+   Geradas com base nas respostas para parecer inteligente.
+============================================================ */
+function gerarMensagensProcessamento() {
+  const r = STATE.respostas;
+  const m = STATE.multi;
+  const msgs = ["Analisando histórico de tentativas anteriores..."];
+
+  if (r.p3 && r.p3.tag === "consistencia") {
+    msgs.push("Mapeando padrão de consistência e ruptura...");
+  } else if (r.p3 && r.p3.tag === "resposta") {
+    msgs.push("Identificando resposta metabólica e platô...");
+  } else if (r.p3 && r.p3.tag === "orientacao") {
+    msgs.push("Cruzando perfil com banco de protocolos...");
+  } else {
+    msgs.push("Cruzando perfil comportamental...");
+  }
+
+  if (m.emocional > 30) {
+    msgs.push("Identificando gatilhos emocionais e motivadores...");
+  } else {
+    msgs.push("Calculando índice de prontidão para mudança...");
+  }
+
+  if (r.p8 && r.p8.tag === "ativo") {
+    msgs.push("Analisando estagnação de progressão...");
+  } else {
+    msgs.push("Calculando potencial de transformação...");
+  }
+
+  msgs.push("Gerando diagnóstico personalizado...");
+
+  return msgs;
+}
+
+/* ============================================================
+   ANÁLISES EXIBIDAS NA TELA DE CAPTURA
+============================================================ */
+function gerarAnalisesCaptura() {
+  const r = STATE.respostas;
+  const lista = [];
+  if (r.p1) lista.push(`Histórico de ${r.p1.texto.split("—")[0].trim().toLowerCase()} identificado`);
+  if (r.p2) lista.push("Impacto emocional mapeado");
+  if (r.p3) lista.push("Principal obstáculo registrado");
+  if (r.p4) lista.push("Nível de comprometimento avaliado");
+  if (r.p5) lista.push("Motivação real identificada");
+  if (r.p8) lista.push("Nível de atividade física registrado");
+  return lista.slice(0, 4);
+}
+
+/* ============================================================
+   ESTADO DO QUIZ
+============================================================ */
+let STATE = {
+  telaAtual: "splash",
+  score: 0,
+  perguntaAtual: 0,
+  perguntasFiltradas: [],
+  respostas: {},
+  nome: "",
+  whatsapp: "",
+  sexo: null,
+  idadeFaixa: null,
+  resultado: null,
+  perfil: null,
+  multi: { ...MULTI_INICIAL },
+  clickouCTA: false,
+  vioDownsell: false,
+  tempoInicio: Date.now(),
+  downsellTimer: null,
+};
+
+/* ============================================================
+   UTILITÁRIOS
+============================================================ */
+const $ = (id) => document.getElementById(id);
+
+function mostrarToast(msg, duracao = 3000) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("visivel");
+  setTimeout(() => t.classList.remove("visivel"), duracao);
+}
+
+function salvarLeadLocal() {
+  const leads = JSON.parse(localStorage.getItem("quiz_leads") || "[]");
+  const idx = leads.findIndex(l => l._sessao === STATE._sessao);
+  const lead = {
+    _sessao:     STATE._sessao,
+    nome:        STATE.nome,
+    whatsapp:    STATE.whatsapp,
+    sexo:        STATE.sexo,
+    idade:       STATE.idadeFaixa,
+    score:       STATE.score,
+    perfil:      STATE.perfil,
+    multi:       { ...STATE.multi },
+    resultado:   STATE.resultado,
+    respostas:   STATE.respostas,
+    clickouCTA:  STATE.clickouCTA,
+    vioDownsell: STATE.vioDownsell,
+    tempoTotal:  Math.round((Date.now() - STATE.tempoInicio) / 1000),
+    timestamp:   new Date().toISOString(),
+  };
+  if (idx >= 0) leads[idx] = lead; else leads.push(lead);
+  localStorage.setItem("quiz_leads", JSON.stringify(leads));
+}
+
+function mascaraWhatsApp(valor) {
+  let v = valor.replace(/\D/g, "").slice(0, 11);
+  if (v.length > 10)      v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+  else if (v.length > 6)  v = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, "($1) $2-$3");
+  else if (v.length > 2)  v = v.replace(/^(\d{2})(\d{0,5})$/, "($1) $2");
+  return v;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* ============================================================
+   NAVEGAÇÃO ENTRE TELAS
+============================================================ */
+function irParaTela(idTela) {
+  const telaAtiva = document.querySelector(".tela.ativa");
+  const telaDestino = $(`tela-${idTela}`);
+  if (!telaDestino || telaDestino === telaAtiva) return;
+
+  if (telaAtiva) {
+    telaAtiva.classList.add("saindo");
+    telaAtiva.classList.remove("ativa");
+    setTimeout(() => { telaAtiva.classList.remove("saindo"); telaAtiva.style.display = "none"; }, 380);
+  }
+
+  telaDestino.style.display = "flex";
+  requestAnimationFrame(() => telaDestino.classList.add("ativa"));
+  STATE.telaAtual = idTela;
+
+  const barraContainer = $("barra-progresso-container");
+  if (idTela === "quiz") {
+    barraContainer.classList.add("visivel");
+    atualizarBarraProgresso();
+  } else {
+    barraContainer.classList.remove("visivel");
+  }
+  window.scrollTo(0, 0);
+}
+
+/* ============================================================
+   BARRA DE PROGRESSO
+============================================================ */
+function atualizarBarraProgresso() {
+  const total = STATE.perguntasFiltradas.length;
+  const pct   = total > 0 ? Math.round((STATE.perguntaAtual / total) * 100) : 0;
+  $("barra-progresso-fill").style.width = pct + "%";
+  $("progresso-texto").textContent = pct + "%";
+}
+
+/* ============================================================
+   MOTOR MULTI-DIMENSIONAL — ATUALIZAÇÃO
+============================================================ */
+function atualizarScoresMulti(pergunta, opcaoNova, opcaoAnterior) {
+  const m = STATE.multi;
+
+  // Remove contribuição anterior
+  if (opcaoAnterior && opcaoAnterior.ind) {
+    Object.entries(opcaoAnterior.ind).forEach(([k, v]) => { if (m[k] !== undefined) m[k] -= v; });
+  }
+  // Adiciona nova contribuição
+  if (opcaoNova.ind) {
+    Object.entries(opcaoNova.ind).forEach(([k, v]) => { if (m[k] !== undefined) m[k] += v; });
+  }
+}
+
+/* ============================================================
+   PERFIL PSICOLÓGICO — IDENTIFICAÇÃO
+============================================================ */
+function identificarPerfil() {
+  const r = STATE.respostas;
+  const m = STATE.multi;
+
+  // Atleta estagnado: treina 5+ vezes mas corpo não responde
+  if (r.p8 && r.p8.tag === "ativo" && r.p3 && r.p3.tag === "resposta") return "atleta_estagnado";
+
+  // Frustrado veterano: mais de 1 ano tentando + já investiu dinheiro
+  if (r.p1 && ["frustrado","esgotado"].includes(r.p1.tag) && r.p6 && ["medio","alto"].includes(r.p6.tag)) return "frustrado_veterano";
+
+  // Bloqueio emocional: muito impacto emocional identificado
+  if (m.emocional > 55 && m.autoestima < -20) return "bloqueio_emocional";
+
+  // Pronto para agir: alto comprometimento + alta urgência
+  if (m.comprometimento >= 40 && m.urgencia >= 25) return "pronto_para_agir";
+
+  // Consistência zero: principal obstáculo é consistência + risco alto
+  if (r.p3 && r.p3.tag === "consistencia" && m.risco > 20) return "consistencia_zero";
+
+  // Iniciante decidido: pouco tempo tentando + alto comprometimento
+  if (r.p1 && ["iniciante","medio"].includes(r.p1.tag) && m.comprometimento > 20) return "iniciante_decidido";
+
+  return "buscando_mudanca";
+}
+
+/* ============================================================
+   MICRO-INSIGHT — EXIBIÇÃO
+============================================================ */
+function mostrarInsight(texto) {
+  const el = $("quiz-insight");
+  const statusEl = $("quiz-sistema-status");
+  if (!texto) { el.classList.remove("visivel"); statusEl.classList.remove("visivel"); return; }
+  el.textContent = texto;
+  el.classList.add("visivel");
+  statusEl.classList.add("visivel");
+  $("quiz-sistema-msg").textContent = "Sistema atualizando análise de perfil...";
+}
+
+function limparInsight() {
+  const el = $("quiz-insight");
+  el.classList.remove("visivel");
+  $("quiz-sistema-status").classList.remove("visivel");
+}
+
+/* ============================================================
+   PARTÍCULAS
+============================================================ */
+function iniciarParticulas() {
+  const canvas = $("canvas-particulas");
+  const ctx = canvas.getContext("2d");
+  let particulas = [];
+
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener("resize", resize);
+
+  function criarParticula() {
+    return { x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5+.3, dx: (Math.random()-.5)*.3, dy: -Math.random()*.5-.1, alpha: Math.random()*.4+.05 };
+  }
+  for (let i = 0; i < 60; i++) particulas.push(criarParticula());
+
+  function animar() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particulas.forEach((p, i) => {
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(0,255,135,${p.alpha})`; ctx.fill();
+      p.x += p.dx; p.y += p.dy;
+      if (p.y < -5 || p.x < -5 || p.x > canvas.width+5) { particulas[i] = criarParticula(); particulas[i].y = canvas.height+5; }
+    });
+    requestAnimationFrame(animar);
+  }
+  animar();
+}
+
+/* ============================================================
+   QUIZ — FILTRAR PERGUNTAS
+============================================================ */
+function filtrarPerguntas() {
+  return PERGUNTAS.filter(p => p.condicao(STATE));
+}
+
+/* ============================================================
+   QUIZ — RENDERIZAR PERGUNTA
+============================================================ */
+function renderizarPergunta() {
+  STATE.perguntasFiltradas = filtrarPerguntas();
+  const idx = STATE.perguntaAtual;
+  const pergunta = STATE.perguntasFiltradas[idx];
+
+  if (!pergunta) { preencherTela3(); irParaTela("captura"); return; }
+
+  limparInsight();
+
+  const total = STATE.perguntasFiltradas.length;
+  const moduloEl = $("quiz-modulo-label");
+  moduloEl.textContent = pergunta.moduloLabel || "";
+
+  $("quiz-numero").textContent = `PERGUNTA ${idx + 1} DE ${total}`;
+  $("quiz-pergunta").textContent = pergunta.texto;
+
+  const contextoEl = $("quiz-contexto");
+  if (pergunta.contexto) { contextoEl.textContent = pergunta.contexto; contextoEl.style.display = ""; }
+  else contextoEl.style.display = "none";
+
+  const container = $("opcoes-container");
+  container.innerHTML = "";
+  const respostaAnterior = STATE.respostas[pergunta.id];
+
+  pergunta.opcoes.forEach((opcao, i) => {
+    const btn = document.createElement("button");
+    btn.className = "opcao-btn" + (respostaAnterior && respostaAnterior.opcaoIndex === i ? " selecionada" : "");
+    btn.innerHTML = `<span class="opcao-letra">${opcao.letra}</span><span class="opcao-texto">${opcao.texto}</span>`;
+    btn.addEventListener("click", () => selecionarOpcao(pergunta, i, opcao));
+    container.appendChild(btn);
+  });
+
+  atualizarBarraProgresso();
+}
+
+/* ============================================================
+   QUIZ — SELECIONAR OPÇÃO
+============================================================ */
+function selecionarOpcao(pergunta, opcaoIndex, opcao) {
+  const respostaAnterior = STATE.respostas[pergunta.id];
+  const opcaoAnterior = respostaAnterior ? pergunta.opcoes[respostaAnterior.opcaoIndex] : null;
+
+  // Atualiza score legado
+  if (respostaAnterior) STATE.score -= respostaAnterior.pontos;
+  STATE.score = Math.max(0, STATE.score + opcao.pontos);
+
+  // Atualiza scores multi-dim
+  atualizarScoresMulti(pergunta, opcao, opcaoAnterior);
+
+  // Salva resposta
+  STATE.respostas[pergunta.id] = { opcaoIndex, pontos: opcao.pontos, tag: opcao.tag, texto: opcao.texto };
+
+  // Callback demográfico
+  if (opcao.aoSelecionar) opcao.aoSelecionar(STATE);
+
+  // Feedback visual
+  document.querySelectorAll(".opcao-btn").forEach(b => b.classList.remove("selecionada"));
+  document.querySelectorAll(".opcao-btn")[opcaoIndex].classList.add("selecionada");
+
+  // Micro-insight
+  if (opcao.insight) mostrarInsight(opcao.insight);
+
+  // Avança após delay (ligeiramente maior para permitir leitura do insight)
+  const delay = opcao.insight ? 900 : 450;
+  setTimeout(() => { STATE.perguntaAtual++; renderizarPergunta(); }, delay);
+}
+
+/* ============================================================
+   TELA 3 — PRÉ-PREENCHER COM ANÁLISES
+============================================================ */
+function preencherTela3() {
+  const analises = gerarAnalisesCaptura();
+  const lista = $("captura-analises-lista");
+  if (lista) {
+    lista.innerHTML = analises.map(a =>
+      `<div class="captura-analise-item"><span class="captura-analise-check">✓</span><span>${a}</span></div>`
+    ).join("");
+  }
+}
+
+/* ============================================================
+   PROCESSANDO — ANIMAÇÃO
+============================================================ */
+function iniciarProcessamento() {
+  irParaTela("processando");
+
+  const etapas = gerarMensagensProcessamento();
+  const etapaEl = $("processando-etapa");
+  const barraEl = $("processando-barra");
+  const pctEl   = $("processando-pct");
+  const scanEl  = $("scan-linha");
+
+  scanEl.classList.add("ativa");
+  setTimeout(() => scanEl.classList.remove("ativa"), 4500);
+
+  etapas.forEach((texto, i) => {
+    setTimeout(() => {
+      etapaEl.style.opacity = "0";
+      setTimeout(() => { etapaEl.textContent = texto; etapaEl.style.opacity = "1"; }, 150);
+      const pct = ((i + 1) / etapas.length) * 100;
+      barraEl.style.width = pct + "%";
+      pctEl.textContent = Math.round(pct) + "%";
+    }, i * 950);
+  });
+
+  setTimeout(() => {
+    STATE.perfil = identificarPerfil();
+    determinarResultado();
+    irParaTela(STATE.resultado === "consultoria" ? "resultado-consultoria" : "resultado-whatsapp");
+    renderizarResultado();
+    configurarDownsell();
+  }, etapas.length * 950 + 600);
+}
+
+/* ============================================================
+   RESULTADO — DETERMINAR OFERTA
+============================================================ */
+function determinarResultado() {
+  STATE.resultado = STATE.score >= QUIZ_CONFIG.scores.consultoria ? "consultoria" : "whatsapp";
+  salvarLeadLocal();
+}
+
+/* ============================================================
+   RESULTADO — RENDERIZAR (ambas as telas)
+============================================================ */
+function renderizarResultado() {
+  const nome   = STATE.nome || "Você";
+  const perfil = STATE.perfil || "buscando_mudanca";
+  const r      = STATE.respostas;
+
+  if (STATE.resultado === "consultoria") {
+    // Título dinâmico
+    const tituloFn = TITULOS.consultoria[perfil] || TITULOS.consultoria.buscando_mudanca;
+    $("titulo-consultoria").textContent = tituloFn(nome);
+
+    // Diagnóstico dinâmico
+    const diagFn = DIAGNOSTICOS.consultoria[perfil] || DIAGNOSTICOS.consultoria.buscando_mudanca;
+    $("diagnostico-consultoria").textContent = diagFn(nome, r, STATE);
+
+    // Chip de perfil
+    $("perfil-chip-texto").textContent = PERFIS_LABEL[perfil] || "perfil identificado";
+
+    // CTA personalizado
+    const ctaBtn = $("btn-cta-consultoria");
+    ctaBtn.textContent = CTAS_CONSULTORIA[perfil] || "QUERO MEU PROTOCOLO PERSONALIZADO →";
+
+    // Preços
+    $("preco-consultoria-de").textContent  = QUIZ_CONFIG.precos.consultoriaDe;
+    $("preco-consultoria-display").textContent = QUIZ_CONFIG.precos.consultoriaPor;
+    $("parcelado-display").textContent = "ou " + QUIZ_CONFIG.precos.consultoriaParc;
+
+    // Bloqueios dinâmicos
+    renderizarBloqueios($("bloqueios-container"));
+
+    // Scores visuais (só dimensões relevantes)
+    renderizarScoresVisuais();
+
+  } else {
+    // WA: título e diagnóstico dinâmicos
+    const tituloFn = TITULOS.whatsapp[perfil] || TITULOS.whatsapp.buscando_mudanca;
+    $("titulo-whatsapp").textContent = tituloFn(nome);
+
+    const diagFn = DIAGNOSTICOS.whatsapp[perfil] || DIAGNOSTICOS.whatsapp.buscando_mudanca;
+    $("diagnostico-whatsapp").textContent = diagFn(nome, r, STATE);
+
+    $("preco-wa-de").textContent      = QUIZ_CONFIG.precos.whatsappDe;
+    $("preco-wa-display").textContent = QUIZ_CONFIG.precos.whatsappPor;
+  }
+}
+
+/* ============================================================
+   RESULTADO — BLOQUEIOS DINÂMICOS
+============================================================ */
+function renderizarBloqueios(container) {
+  container.innerHTML = "";
+  const tags = Object.values(STATE.respostas).sort((a, b) => b.pontos - a.pontos).map(r => r.tag);
+  const bloqueiosResolv = [];
+
+  for (const tag of tags) {
+    if (BLOQUEIOS[tag] && !bloqueiosResolv.find(b => b.titulo === BLOQUEIOS[tag].titulo)) {
+      bloqueiosResolv.push(BLOQUEIOS[tag]);
+      if (bloqueiosResolv.length === 3) break;
+    }
+  }
+  const defaults = ["default1", "default2", "default3"];
+  let di = 0;
+  while (bloqueiosResolv.length < 3) bloqueiosResolv.push(BLOQUEIOS[defaults[di++]]);
+
+  bloqueiosResolv.forEach(b => {
+    const card = document.createElement("div");
+    card.className = "bloqueio-card";
+    card.innerHTML = `<span class="bloqueio-icone">${b.icone}</span><div class="bloqueio-texto"><strong>${b.titulo}</strong><p>${b.desc}</p></div>`;
+    container.appendChild(card);
+  });
+}
+
+/* ============================================================
+   RESULTADO — SCORES VISUAIS (dimensões selecionadas)
+============================================================ */
+function renderizarScoresVisuais() {
+  const container = $("scores-visuais");
+  const m = STATE.multi;
+
+  // Seleciona as 4 dimensões mais relevantes para exibir
+  const dimensoesLabel = {
+    urgencia:        "Urgência de mudança",
+    comprometimento: "Comprometimento",
+    acompanhamento:  "Necessidade de suporte",
+    emocional:       "Impacto emocional",
+  };
+
+  // Normaliza os valores para 0-100 (máximo teórico ~100)
+  const normalizar = (v) => Math.min(100, Math.max(0, Math.round(v)));
+
+  const linhas = Object.entries(dimensoesLabel).map(([k, label]) => {
+    const val = normalizar(m[k]);
+    return `<div class="score-linha">
+      <span class="score-linha-label">${label}</span>
+      <div class="score-linha-track"><div class="score-linha-fill" style="width:0%" data-target="${val}"></div></div>
+      <span class="score-linha-valor">${val}</span>
+    </div>`;
+  }).join("");
+
+  container.innerHTML = `<p class="scores-visuais-titulo">ANÁLISE DO SEU PERFIL</p>${linhas}`;
+
+  // Anima as barras com delay
+  setTimeout(() => {
+    container.querySelectorAll(".score-linha-fill").forEach(el => {
+      el.style.width = el.dataset.target + "%";
+    });
+  }, 300);
+}
+
+/* ============================================================
+   DOWNSELL
+============================================================ */
+function configurarDownsell() {
+  if (STATE.resultado !== "consultoria") return;
+  STATE.downsellTimer = setTimeout(() => {
+    if (!STATE.clickouCTA) mostrarDownsell();
+  }, QUIZ_CONFIG.downsellDelay);
+}
+
+function mostrarDownsell() {
+  STATE.vioDownsell = true;
+  salvarLeadLocal();
+
+  const resp6 = STATE.respostas["p6"];
+  const histInvest = resp6 && resp6.tag === "alto"
+    ? `Você já gastou mais de R$500 tentando e não teve o resultado que merecia.`
+    : resp6 && resp6.tag === "medio"
+    ? `Você já investiu em orientação antes e sabe que personalização faz diferença.`
+    : `Você já fez tentativas antes.`;
+
+  $("downsell-texto").innerHTML = `
+    Talvez o investimento tenha dado uma pausa. Entendo.<br><br>
+    Mas pensa comigo: <strong style="color:var(--cor-acento)">${histInvest}</strong>
+    O que muda se você continuar do mesmo jeito por mais 6 meses?<br><br>
+    São <strong style="color:var(--cor-acento)">${QUIZ_CONFIG.precos.consultoriaParc}</strong>.
+    Menos de ${QUIZ_CONFIG.precos.custoDiario} por dia — menos que um café.
+    45 dias para mudar o que você não conseguiu em anos sozinho.
+  `;
+  $("modal-downsell").classList.add("visivel");
+}
+
+function fecharDownsell() { $("modal-downsell").classList.remove("visivel"); }
+
+/* ============================================================
+   VALIDAÇÃO DO FORMULÁRIO
+============================================================ */
+function validarFormulario() {
+  const nome     = $("input-nome").value.trim();
+  const whatsapp = $("input-whatsapp").value.replace(/\D/g, "");
+  let valido = true;
+
+  if (nome.length < 2) {
+    $("input-nome").classList.add("erro");
+    $("erro-nome").style.display = "block";
+    valido = false;
+  } else {
+    $("input-nome").classList.remove("erro");
+    $("erro-nome").style.display = "none";
+  }
+
+  if (whatsapp.length < 10) {
+    $("input-whatsapp").classList.add("erro");
+    $("erro-whatsapp").style.display = "block";
+    valido = false;
+  } else {
+    $("input-whatsapp").classList.remove("erro");
+    $("erro-whatsapp").style.display = "none";
+  }
+
+  if (valido) { STATE.nome = nome; STATE.whatsapp = $("input-whatsapp").value; }
+  return valido;
+}
+
+/* ============================================================
+   PAINEL ADMIN
+============================================================ */
+function carregarAdmin() {
+  const leads = JSON.parse(localStorage.getItem("quiz_leads") || "[]");
+  const total       = leads.length;
+  const consultoria = leads.filter(l => l.resultado === "consultoria").length;
+  const whatsapp    = leads.filter(l => l.resultado === "whatsapp").length;
+  const clicaram    = leads.filter(l => l.clickouCTA).length;
+  const taxaCTA     = total > 0 ? Math.round((clicaram/total)*100) : 0;
+  const tempoMedio  = total > 0 ? Math.round(leads.reduce((s,l) => s+(l.tempoTotal||0),0)/total) : 0;
+  const scoresMedio = total > 0 ? Math.round(leads.reduce((s,l) => s+(l.score||0),0)/total) : 0;
+
+  $("admin-stats").innerHTML = `
+    <div class="admin-stat-card"><div class="admin-stat-label">Total Leads</div><div class="admin-stat-valor">${total}</div></div>
+    <div class="admin-stat-card"><div class="admin-stat-label">Consultoria</div><div class="admin-stat-valor" style="color:var(--cor-ouro)">${consultoria}</div></div>
+    <div class="admin-stat-card"><div class="admin-stat-label">Comunidade</div><div class="admin-stat-valor">${whatsapp}</div></div>
+    <div class="admin-stat-card"><div class="admin-stat-label">Taxa CTA</div><div class="admin-stat-valor">${taxaCTA}%</div></div>
+    <div class="admin-stat-card"><div class="admin-stat-label">Score Médio</div><div class="admin-stat-valor">${scoresMedio}</div></div>
+    <div class="admin-stat-card"><div class="admin-stat-label">Tempo Médio</div><div class="admin-stat-valor" style="font-size:20px">${tempoMedio}s</div></div>
+  `;
+
+  const tbody = $("admin-tbody");
+  tbody.innerHTML = "";
+  if (leads.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--cor-texto-suave);padding:24px">Nenhum lead ainda</td></tr>`;
+    return;
+  }
+  leads.slice().reverse().forEach(lead => {
+    const tr = document.createElement("tr");
+    const data = new Date(lead.timestamp).toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+    const perfilLabel = lead.perfil ? (PERFIS_LABEL[lead.perfil] || lead.perfil) : "—";
+    tr.innerHTML = `
+      <td>${escapeHtml(lead.nome || "—")}</td>
+      <td>${escapeHtml(lead.whatsapp || "—")}</td>
+      <td><span class="font-mono" style="color:var(--cor-primaria)">${lead.score||0}</span></td>
+      <td><span class="tag-perfil">${escapeHtml(perfilLabel)}</span></td>
+      <td><span class="tag-resultado ${lead.resultado}">${lead.resultado||"—"}</span></td>
+      <td>${lead.clickouCTA ? "✅" : "—"}</td>
+      <td class="font-mono" style="font-size:11px">${lead.tempoTotal||0}s</td>
+      <td class="font-mono" style="font-size:11px">${data}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function exportarCSV() {
+  const leads = JSON.parse(localStorage.getItem("quiz_leads") || "[]");
+  if (leads.length === 0) { mostrarToast("Nenhum lead para exportar"); return; }
+  const cab = ["Nome","WhatsApp","Sexo","Idade","Score","Perfil","Resultado","CTA","Downsell","Tempo(s)","Timestamp"];
+  const linhas = leads.map(l => [
+    `"${l.nome||""}"`, `"${l.whatsapp||""}"`, l.sexo||"", l.idade||"",
+    l.score||0, `"${l.perfil||""}"`, l.resultado||"",
+    l.clickouCTA?"sim":"nao", l.vioDownsell?"sim":"nao",
+    l.tempoTotal||0, `"${l.timestamp||""}"`
+  ].join(","));
+  const csv = [cab.join(","), ...linhas].join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `leads_quiz_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+/* ============================================================
+   INICIALIZAÇÃO
+============================================================ */
+document.addEventListener("DOMContentLoaded", () => {
+
+  // Rota admin
+  if (new URLSearchParams(window.location.search).get("admin") === "true") {
+    document.querySelectorAll(".tela").forEach(t => { t.classList.remove("ativa"); t.style.display = "none"; });
+    const ta = $("tela-admin");
+    ta.style.display = "flex"; ta.classList.add("ativa");
+    carregarAdmin(); return;
+  }
+
+  iniciarParticulas();
+
+  /* SPLASH */
+  $("btn-comecar").addEventListener("click", () => {
+    STATE = {
+      telaAtual: "quiz", score: 0, perguntaAtual: 0, perguntasFiltradas: [],
+      respostas: {}, nome: "", whatsapp: "", sexo: null, idadeFaixa: null,
+      resultado: null, perfil: null, multi: { ...MULTI_INICIAL },
+      clickouCTA: false, vioDownsell: false, tempoInicio: Date.now(),
+      downsellTimer: null, _sessao: Date.now().toString(36),
+    };
+    irParaTela("quiz");
+    renderizarPergunta();
+  });
+
+  /* MÁSCARA WHATSAPP */
+  $("input-whatsapp").addEventListener("input", e => { e.target.value = mascaraWhatsApp(e.target.value); });
+
+  /* CAPTURA */
+  $("btn-ver-diagnostico").addEventListener("click", () => { if (validarFormulario()) iniciarProcessamento(); });
+
+  /* CTAs */
+  $("btn-cta-consultoria").addEventListener("click", () => {
+    STATE.clickouCTA = true; salvarLeadLocal();
+    clearTimeout(STATE.downsellTimer); fecharDownsell();
+    window.location.href = QUIZ_CONFIG.checkout.consultoria;
+  });
+  $("btn-cta-whatsapp").addEventListener("click", () => {
+    STATE.clickouCTA = true; salvarLeadLocal();
+    window.location.href = QUIZ_CONFIG.checkout.whatsapp;
+  });
+
+  /* DOWNSELL */
+  $("btn-fechar-downsell").addEventListener("click", fecharDownsell);
+  $("btn-downsell-sim").addEventListener("click", () => {
+    STATE.clickouCTA = true; salvarLeadLocal(); fecharDownsell();
+    window.location.href = QUIZ_CONFIG.checkout.consultoria;
+  });
+  $("btn-downsell-nao").addEventListener("click", () => {
+    fecharDownsell(); window.location.href = QUIZ_CONFIG.checkout.whatsapp;
+  });
+  document.addEventListener("click", e => {
+    const m = $("modal-downsell");
+    if (m.classList.contains("visivel") && !m.contains(e.target)) fecharDownsell();
+  });
+
+  /* ADMIN */
+  $("btn-exportar-csv").addEventListener("click", exportarCSV);
+  $("btn-limpar-leads").addEventListener("click", () => {
+    if (confirm("Tem certeza? Todos os leads serão apagados.")) {
+      localStorage.removeItem("quiz_leads"); carregarAdmin();
+    }
+  });
+
+});
+</script>
+</body>
+</html>
