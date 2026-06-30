@@ -711,9 +711,23 @@ const PERGUNTAS = [
     condicao: () => true,
     opcoes: [
       { letra:"A", imagem:"MAGRO.png",                        texto:"Magro",                  pontos:5,  tag:"ectomorfo",     ind:{ acompanhamento:10 },          insight:"Ectomorfos precisam de protocolo específico de volume e nutrição hipercalórica para evoluir.", aoSelecionar:(s)=>{ s.biotipo="ectomorfo"; } },
-      { letra:"B", imagem:"FORÇA%20MÉDIA.png",               texto:"Força Média",             pontos:10, tag:"mesomorfo",     ind:{ prontidao:10 },               insight:"Você tem a genética mais favorável — o protocolo vai potencializar ainda mais seu resultado.", aoSelecionar:(s)=>{ s.biotipo="mesomorfo"; } },
-      { letra:"C", imagem:"UM%20POUCO%20ACIMA%20DO%20PESO.webp", texto:"Um Pouco Acima do Peso", pontos:12, tag:"endomorfo_leve", ind:{ urgencia:8, acompanhamento:12 },  insight:"Com a estratégia certa de treino e alimentação, a definição vem mais rápido do que você imagina.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
-      { letra:"D", imagem:"MAIS%20PESADO.webp",              texto:"Mais Pesado",             pontos:15, tag:"endomorfo",     ind:{ urgencia:10, acompanhamento:15 }, insight:"Endomorfos transformam com a estratégia certa de treino combinada com alimentação específica.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+      { letra:"B", imagem:"FORÇA MÉDIA.png",                  texto:"Força Média",             pontos:10, tag:"mesomorfo",     ind:{ prontidao:10 },               insight:"Você tem a genética mais favorável — o protocolo vai potencializar ainda mais seu resultado.", aoSelecionar:(s)=>{ s.biotipo="mesomorfo"; } },
+      { letra:"C", imagem:"UM POUCO ACIMA DO PESO.webp", texto:"Um Pouco Acima do Peso", pontos:12, tag:"endomorfo_leve", ind:{ urgencia:8, acompanhamento:12 },  insight:"Com a estratégia certa de treino e alimentação, a definição vem mais rápido do que você imagina.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+      { letra:"D", imagem:"MAIS PESADO.webp",              texto:"Mais Pesado",             pontos:15, tag:"endomorfo",     ind:{ urgencia:10, acompanhamento:15 }, insight:"Endomorfos transformam com a estratégia certa de treino combinada com alimentação específica.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+    ],
+  },
+  {
+    id: "p_objetivo",
+    texto: "Qual é o seu objetivo corporal?",
+    contexto: "Visualize sua meta para se manter motivado e responsável.",
+    modulo: "PRÉ",
+    moduloLabel: "OBJETIVO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", imagem:"Em forma.webp",    texto:"Em Forma",   pontos:8,  tag:"obj_forma",    ind:{ prontidao:8 },              insight:"Perfeito — definição visível é totalmente alcançável com o protocolo certo.", aoSelecionar:(s)=>{ s.objetivo="em_forma"; } },
+      { letra:"B", imagem:"Atlético.webp",   texto:"Atlético",   pontos:10, tag:"obj_atletico", ind:{ prontidao:10, urgencia:5 }, insight:"Corpo atlético exige treino inteligente + alimentação alinhada — e você vai chegar lá.", aoSelecionar:(s)=>{ s.objetivo="atletico"; } },
+      { letra:"C", imagem:"Trincado.webp",   texto:"Trincado",   pontos:12, tag:"obj_trincado", ind:{ urgencia:10, prontidao:8 }, insight:"Esse nível de definição requer periodização e protocolo personalizado — exatamente o que vamos montar.", aoSelecionar:(s)=>{ s.objetivo="trincado"; } },
+      { letra:"D", imagem:"Inchado.webp",    texto:"Inchado",    pontos:10, tag:"obj_inchado",  ind:{ prontidao:8, urgencia:5 },  insight:"Ganho de massa sólida com o protocolo certo — sem acumular gordura desnecessária.", aoSelecionar:(s)=>{ s.objetivo="inchado"; } },
     ],
   },
 
@@ -1085,6 +1099,7 @@ let STATE = {
   sexo: null,
   idadeFaixa: null,
   biotipo: null,
+  objetivo: null,
   resultado: null,
   perfil: null,
   multi: { ...MULTI_INICIAL },
@@ -1309,7 +1324,8 @@ function renderizarPergunta() {
     pergunta.opcoes.forEach((opcao, i) => {
       const card = document.createElement("button");
       card.className = "opcao-imagem-card" + (respostaAnterior && respostaAnterior.opcaoIndex === i ? " selecionada" : "");
-      card.innerHTML = `<img class="opcao-imagem-img" src="${opcao.imagem}" alt="${opcao.texto}" loading="lazy" /><span class="opcao-imagem-label">${opcao.texto}</span>`;
+      const src = encodeURIComponent(opcao.imagem).replace(/%2F/gi, '/');
+      card.innerHTML = `<img class="opcao-imagem-img" src="${src}" alt="${opcao.texto}" loading="lazy" /><span class="opcao-imagem-label">${opcao.texto}</span>`;
       card.addEventListener("click", () => selecionarOpcao(pergunta, i, opcao));
       grid.appendChild(card);
     });
@@ -1798,7 +1814,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-comecar").addEventListener("click", () => {
     STATE = {
       telaAtual: "quiz", score: 0, perguntaAtual: 0, perguntasFiltradas: [],
-      respostas: {}, nome: "", whatsapp: "", sexo: null, idadeFaixa: null, biotipo: null,
+      respostas: {}, nome: "", whatsapp: "", sexo: null, idadeFaixa: null, biotipo: null, objetivo: null,
       resultado: null, perfil: null, multi: { ...MULTI_INICIAL },
       clickouCTA: false, vioDownsell: false, tempoInicio: Date.now(),
       downsellTimer: null, _sessao: Date.now().toString(36),
