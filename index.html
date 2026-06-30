@@ -1364,9 +1364,11 @@ function selecionarOpcao(pergunta, opcaoIndex, opcao) {
   // Callback demográfico
   if (opcao.aoSelecionar) opcao.aoSelecionar(STATE);
 
-  // Feedback visual
-  document.querySelectorAll(".opcao-btn").forEach(b => b.classList.remove("selecionada"));
-  document.querySelectorAll(".opcao-btn")[opcaoIndex].classList.add("selecionada");
+  // Feedback visual (suporta tanto .opcao-btn quanto .opcao-imagem-card)
+  const seletorOpcao = document.querySelector(".opcao-imagem-card") ? ".opcao-imagem-card" : ".opcao-btn";
+  document.querySelectorAll(seletorOpcao).forEach(b => b.classList.remove("selecionada"));
+  const els = document.querySelectorAll(seletorOpcao);
+  if (els[opcaoIndex]) els[opcaoIndex].classList.add("selecionada");
 
   // Micro-insight
   if (opcao.insight) mostrarInsight(opcao.insight);
