@@ -197,6 +197,29 @@
     .quiz-insight-texto.visivel { opacity: 1; }
     .quiz-insight-texto::before { content: '›'; font-family: var(--font-mono); font-size: 14px; flex-shrink: 0; }
 
+    /* Cards de imagem para pergunta de biotipo */
+    .opcoes-imagem-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;
+    }
+    .opcao-imagem-card {
+      background: var(--cor-card); border: 2px solid var(--cor-borda);
+      cursor: pointer; overflow: hidden; transition: border-color .2s, transform .15s;
+      display: flex; flex-direction: column; align-items: center; padding: 0;
+    }
+    .opcao-imagem-card:active { transform: scale(.97); }
+    .opcao-imagem-card.selecionada { border-color: var(--cor-primaria); }
+    .opcao-imagem-card.selecionada .opcao-imagem-label { background: var(--cor-primaria); color: #000; }
+    .opcao-imagem-img {
+      width: 100%; aspect-ratio: 3/4; object-fit: cover; object-position: top;
+      display: block; pointer-events: none;
+    }
+    .opcao-imagem-label {
+      width: 100%; padding: 10px 6px; font-size: 11px; font-weight: 700;
+      text-align: center; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--cor-texto); background: var(--cor-card);
+      transition: background .2s, color .2s; line-height: 1.3;
+    }
+
 
     /* ============================================================
        CAPTURA DE DADOS
@@ -687,10 +710,10 @@ const PERGUNTAS = [
     moduloLabel: "BIOTIPO",
     condicao: () => true,
     opcoes: [
-      { letra:"A", texto:"Ectomorfo — sou magro e tenho dificuldade de ganhar peso e músculo",  pontos:5,  tag:"ectomorfo",  ind:{ acompanhamento:10 }, insight:"Ectomorfos precisam de protocolo específico de volume e nutrição hipercalórica para evoluir.", aoSelecionar:(s)=>{ s.biotipo="ectomorfo"; } },
-      { letra:"B", texto:"Mesomorfo — ganho músculo com facilidade e tenho corpo atlético",      pontos:10, tag:"mesomorfo",  ind:{ prontidao:10 },    insight:"Você tem a genética mais favorável — o protocolo vai potencializar ainda mais seu resultado.", aoSelecionar:(s)=>{ s.biotipo="mesomorfo"; } },
-      { letra:"C", texto:"Endomorfo — tenho tendência a acumular gordura e dificuldade de definir", pontos:15, tag:"endomorfo", ind:{ urgencia:10, acompanhamento:15 }, insight:"Endomorfos transformam com a estratégia certa de treino combinada com alimentação específica.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
-      { letra:"D", texto:"Não sei identificar meu biotipo",                                       pontos:5,  tag:"sem-biotipo",ind:{ acompanhamento:15 }, insight:"Sem problema — o protocolo identifica e adapta tudo para o seu perfil automaticamente.", aoSelecionar:(s)=>{ s.biotipo=null; } },
+      { letra:"A", imagem:"MAGRO.png",                        texto:"Magro",                  pontos:5,  tag:"ectomorfo",     ind:{ acompanhamento:10 },          insight:"Ectomorfos precisam de protocolo específico de volume e nutrição hipercalórica para evoluir.", aoSelecionar:(s)=>{ s.biotipo="ectomorfo"; } },
+      { letra:"B", imagem:"FORÇA%20MÉDIA.png",               texto:"Força Média",             pontos:10, tag:"mesomorfo",     ind:{ prontidao:10 },               insight:"Você tem a genética mais favorável — o protocolo vai potencializar ainda mais seu resultado.", aoSelecionar:(s)=>{ s.biotipo="mesomorfo"; } },
+      { letra:"C", imagem:"UM%20POUCO%20ACIMA%20DO%20PESO.webp", texto:"Um Pouco Acima do Peso", pontos:12, tag:"endomorfo_leve", ind:{ urgencia:8, acompanhamento:12 },  insight:"Com a estratégia certa de treino e alimentação, a definição vem mais rápido do que você imagina.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+      { letra:"D", imagem:"MAIS%20PESADO.webp",              texto:"Mais Pesado",             pontos:15, tag:"endomorfo",     ind:{ urgencia:10, acompanhamento:15 }, insight:"Endomorfos transformam com a estratégia certa de treino combinada com alimentação específica.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
     ],
   },
 
@@ -1279,13 +1302,28 @@ function renderizarPergunta() {
   container.innerHTML = "";
   const respostaAnterior = STATE.respostas[pergunta.id];
 
-  pergunta.opcoes.forEach((opcao, i) => {
-    const btn = document.createElement("button");
-    btn.className = "opcao-btn" + (respostaAnterior && respostaAnterior.opcaoIndex === i ? " selecionada" : "");
-    btn.innerHTML = `<span class="opcao-letra">${opcao.letra}</span><span class="opcao-texto">${opcao.texto}</span>`;
-    btn.addEventListener("click", () => selecionarOpcao(pergunta, i, opcao));
-    container.appendChild(btn);
-  });
+  if (pergunta.opcoes[0] && pergunta.opcoes[0].imagem) {
+    // Pergunta com cards visuais (imagem + label)
+    const grid = document.createElement("div");
+    grid.className = "opcoes-imagem-grid";
+    pergunta.opcoes.forEach((opcao, i) => {
+      const card = document.createElement("button");
+      card.className = "opcao-imagem-card" + (respostaAnterior && respostaAnterior.opcaoIndex === i ? " selecionada" : "");
+      card.innerHTML = `<img class="opcao-imagem-img" src="${opcao.imagem}" alt="${opcao.texto}" loading="lazy" /><span class="opcao-imagem-label">${opcao.texto}</span>`;
+      card.addEventListener("click", () => selecionarOpcao(pergunta, i, opcao));
+      grid.appendChild(card);
+    });
+    container.appendChild(grid);
+  } else {
+    // Pergunta padrão com texto
+    pergunta.opcoes.forEach((opcao, i) => {
+      const btn = document.createElement("button");
+      btn.className = "opcao-btn" + (respostaAnterior && respostaAnterior.opcaoIndex === i ? " selecionada" : "");
+      btn.innerHTML = `<span class="opcao-letra">${opcao.letra}</span><span class="opcao-texto">${opcao.texto}</span>`;
+      btn.addEventListener("click", () => selecionarOpcao(pergunta, i, opcao));
+      container.appendChild(btn);
+    });
+  }
 
   atualizarBarraProgresso();
 }
