@@ -270,6 +270,32 @@
       cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
     }
 
+    /* ── Tela de aviso interstitial ─────────────────────────── */
+    .aviso-wrapper {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center;
+      padding: 32px 8px 100px; gap: 20px; width: 100%;
+    }
+    .aviso-emoji { font-size: 56px; line-height: 1; }
+    .aviso-titulo {
+      font-size: 26px; font-weight: 900; color: var(--cor-texto);
+      text-transform: uppercase; letter-spacing: 1px; line-height: 1.2;
+    }
+    .aviso-texto {
+      font-size: 16px; color: var(--cor-texto-fraco); line-height: 1.7; max-width: 320px;
+    }
+    .aviso-texto .destaque { color: var(--cor-primaria); font-weight: 700; }
+    .aviso-btn-wrap {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 16px 24px calc(16px + env(safe-area-inset-bottom));
+      background: var(--cor-fundo); border-top: 1px solid var(--cor-borda);
+    }
+    .aviso-btn {
+      width: 100%; padding: 16px; background: var(--cor-primaria); color: #000;
+      font-size: 15px; font-weight: 800; border: none; border-radius: 8px;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    }
+
 
     /* ============================================================
        CAPTURA DE DADOS
@@ -739,6 +765,20 @@ const PERGUNTAS = [
     ],
   },
   {
+    id: "p_tempo_treino",
+    texto: "Há quanto tempo você não treina?",
+    contexto: "",
+    modulo: "PRÉ",
+    moduloLabel: "PERSONALIZAÇÃO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", texto:"Alguns meses",       pontos:5,  tag:"meses",    ind:{ prontidao:8 },            insight:"Ótimo — retomar agora é o momento certo.", aoSelecionar:(s)=>{ s.tempoTreino="meses"; } },
+      { letra:"B", texto:"Há mais de 1 ano",   pontos:15, tag:"1ano",     ind:{ urgencia:10, risco:8 },   insight:"Mais de um ano parado só reforça que o método anterior não funcionou.", aoSelecionar:(s)=>{ s.tempoTreino="1ano"; } },
+      { letra:"C", texto:"Treino, mas pouco",  pontos:8,  tag:"pouco",    ind:{ prontidao:5, urgencia:5 },insight:"Treinar pouco com o protocolo certo entrega mais que treinar muito sem direção.", aoSelecionar:(s)=>{ s.tempoTreino="pouco"; } },
+      { letra:"D", texto:"Nunca treinei",      pontos:10, tag:"nunca",    ind:{ prontidao:10 },           insight:"Começar do zero com o protocolo certo é a vantagem que poucos têm.", aoSelecionar:(s)=>{ s.tempoTreino="nunca"; } },
+    ],
+  },
+  {
     id: "p_idade",
     texto: "Qual é a sua faixa etária?",
     contexto: "",
@@ -746,24 +786,10 @@ const PERGUNTAS = [
     moduloLabel: "PERSONALIZAÇÃO",
     condicao: () => true,
     opcoes: [
-      { letra:"A", texto:"18 a 24 anos", pontos:0,  tag:"18-24", ind:{ prontidao:5 },  insight:"Fase ideal para construir uma base sólida.", aoSelecionar:(s)=>{ s.idadeFaixa="18-24"; } },
-      { letra:"B", texto:"25 a 34 anos", pontos:5,  tag:"25-34", ind:{ urgencia:5 },   insight:"Os 30 são a janela de ouro para resultados definitivos.", aoSelecionar:(s)=>{ s.idadeFaixa="25-34"; } },
-      { letra:"C", texto:"35 a 44 anos", pontos:10, tag:"35-44", ind:{ urgencia:10, acompanhamento:10 }, insight:"A estratégia certa faz cada vez mais diferença nessa faixa.", aoSelecionar:(s)=>{ s.idadeFaixa="35-44"; } },
-      { letra:"D", texto:"45 anos ou mais",pontos:10,tag:"45+",  ind:{ urgencia:10, acompanhamento:15 }, insight:"Personalização não é opcional aqui — é essencial.", aoSelecionar:(s)=>{ s.idadeFaixa="45+"; } },
-    ],
-  },
-  {
-    id: "p_biotipo",
-    texto: "Como está seu físico hoje?",
-    contexto: "Isso define como seu protocolo de treino e alimentação será estruturado.",
-    modulo: "PRÉ",
-    moduloLabel: "BIOTIPO",
-    condicao: () => true,
-    opcoes: [
-      { letra:"A", imagem:"MAGRO.png",               imagemF:"Magra.png",           texto:"Magro",         pontos:5,  tag:"ectomorfo",     ind:{ acompanhamento:10 },          insight:"Ectomorfos precisam de protocolo específico de volume e nutrição hipercalórica para evoluir.", aoSelecionar:(s)=>{ s.biotipo="ectomorfo"; } },
-      { letra:"B", imagem:"FORÇA MÉDIA.png",         imagemF:"Definida.png",        texto:"Definido",      pontos:10, tag:"mesomorfo",     ind:{ prontidao:10 },               insight:"Você tem a genética mais favorável — o protocolo vai potencializar ainda mais seu resultado.", aoSelecionar:(s)=>{ s.biotipo="mesomorfo"; } },
-      { letra:"C", imagem:"UM POUCO ACIMA DO PESO.webp", imagemF:"Acima do peso.png", texto:"Acima do Peso", pontos:12, tag:"endomorfo_leve", ind:{ urgencia:8, acompanhamento:12 }, insight:"Com a estratégia certa de treino e alimentação, a definição vem mais rápido do que você imagina.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
-      { letra:"D", imagem:"MAIS PESADO.webp",        imagemF:"Mais pesada.png",     texto:"Mais Pesado",   pontos:15, tag:"endomorfo",     ind:{ urgencia:10, acompanhamento:15 }, insight:"Endomorfos transformam com a estratégia certa de treino combinada com alimentação específica.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+      { letra:"A", texto:"18 a 24 anos",    pontos:0,  tag:"18-24", ind:{ prontidao:5 },                         insight:"Fase ideal para construir uma base sólida.", aoSelecionar:(s)=>{ s.idadeFaixa="18-24"; } },
+      { letra:"B", texto:"25 a 34 anos",    pontos:5,  tag:"25-34", ind:{ urgencia:5 },                          insight:"Os 30 são a janela de ouro para resultados definitivos.", aoSelecionar:(s)=>{ s.idadeFaixa="25-34"; } },
+      { letra:"C", texto:"35 a 44 anos",    pontos:10, tag:"35-44", ind:{ urgencia:10, acompanhamento:10 },      insight:"A estratégia certa faz cada vez mais diferença nessa faixa.", aoSelecionar:(s)=>{ s.idadeFaixa="35-44"; } },
+      { letra:"D", texto:"45 anos ou mais", pontos:10, tag:"45+",   ind:{ urgencia:10, acompanhamento:15 },      insight:"Personalização não é opcional aqui — é essencial.", aoSelecionar:(s)=>{ s.idadeFaixa="45+"; } },
     ],
   },
   {
@@ -779,12 +805,33 @@ const PERGUNTAS = [
   {
     id: "p_peso",
     tipo: "slider",
-    texto: "Qual é o seu peso atual?",
+    texto: "Qual é o seu peso aproximado?",
     contexto: "Sua composição corporal atual define a intensidade e o volume do seu protocolo.",
     modulo: "PRÉ",
     moduloLabel: "PERSONALIZAÇÃO",
     condicao: () => true,
     sliderConfig: { min: 40, max: 150, default: 78, step: 1, unidade: "kg", minLabel: "40 kg", maxLabel: "150 kg", aoSalvar: (s, v) => { s.peso = v; } },
+  },
+  {
+    id: "p_aviso",
+    tipo: "aviso",
+    modulo: "PRÉ",
+    moduloLabel: "PERSONALIZAÇÃO",
+    condicao: () => true,
+  },
+  {
+    id: "p_biotipo",
+    texto: "Como está seu físico hoje?",
+    contexto: "Isso define como seu protocolo de treino e alimentação será estruturado.",
+    modulo: "PRÉ",
+    moduloLabel: "BIOTIPO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", imagem:"MAGRO.png",               imagemF:"Magra.png",           texto:"Magro",         textoF:"Magra",         pontos:5,  tag:"ectomorfo",     ind:{ acompanhamento:10 },          insight:"Ectomorfos precisam de protocolo específico de volume e nutrição hipercalórica para evoluir.", aoSelecionar:(s)=>{ s.biotipo="ectomorfo"; } },
+      { letra:"B", imagem:"FORÇA MÉDIA.png",         imagemF:"Definida.png",        texto:"Definido",      textoF:"Definida",      pontos:10, tag:"mesomorfo",     ind:{ prontidao:10 },               insight:"Você tem a genética mais favorável — o protocolo vai potencializar ainda mais seu resultado.", aoSelecionar:(s)=>{ s.biotipo="mesomorfo"; } },
+      { letra:"C", imagem:"UM POUCO ACIMA DO PESO.webp", imagemF:"Acima do peso.png", texto:"Acima do Peso", textoF:"Acima do Peso", pontos:12, tag:"endomorfo_leve", ind:{ urgencia:8, acompanhamento:12 }, insight:"Com a estratégia certa de treino e alimentação, a definição vem mais rápido do que você imagina.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+      { letra:"D", imagem:"MAIS PESADO.webp",        imagemF:"Mais pesada.png",     texto:"Mais Pesado",   textoF:"Mais Pesada",   pontos:15, tag:"endomorfo",     ind:{ urgencia:10, acompanhamento:15 }, insight:"Endomorfos transformam com a estratégia certa de treino combinada com alimentação específica.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+    ],
   },
   {
     id: "p_objetivo",
@@ -1167,6 +1214,7 @@ let STATE = {
   nome: "",
   whatsapp: "",
   sexo: null,
+  tempoTreino: null,
   idadeFaixa: null,
   altura: null,
   peso: null,
@@ -1372,9 +1420,11 @@ function renderizarPergunta() {
 
   if (!pergunta) { preencherTela3(); irParaTela("captura"); return; }
 
-  // Esconde botão de slider ao sair de pergunta slider
+  // Esconde botões fixos de slider/aviso ao trocar de pergunta
   const sliderBtn = document.getElementById("slider-continuar-fixed");
   if (sliderBtn) sliderBtn.style.display = "none";
+  const avisoBtn = document.getElementById("aviso-btn-fixed");
+  if (avisoBtn) avisoBtn.style.display = "none";
 
   limparInsight();
 
@@ -1392,6 +1442,40 @@ function renderizarPergunta() {
   const container = $("opcoes-container");
   container.innerHTML = "";
   const respostaAnterior = STATE.respostas[pergunta.id];
+
+  if (pergunta.tipo === "aviso") {
+    $("quiz-modulo-label").textContent = "";
+    $("quiz-numero").textContent = "";
+    $("quiz-pergunta").textContent = "";
+    $("quiz-contexto").style.display = "none";
+    const wrapper = document.createElement("div");
+    wrapper.className = "aviso-wrapper";
+    wrapper.innerHTML = `
+      <div class="aviso-emoji">⚠️</div>
+      <div class="aviso-titulo">Atenção total agora!</div>
+      <div class="aviso-texto">
+        A partir de agora, leia tudo com calma e responda com a verdade.<br><br>
+        Isso tornará seu plano <span class="destaque">100% preciso e eficaz.</span>
+      </div>
+    `;
+    container.appendChild(wrapper);
+    let avisoBtn = document.getElementById("aviso-btn-fixed");
+    if (!avisoBtn) {
+      avisoBtn = document.createElement("div");
+      avisoBtn.id = "aviso-btn-fixed";
+      avisoBtn.className = "aviso-btn-wrap";
+      avisoBtn.innerHTML = `<button class="aviso-btn">OK, ESTOU DE ACORDO</button>`;
+      document.getElementById("tela-quiz").appendChild(avisoBtn);
+    }
+    avisoBtn.style.display = "";
+    avisoBtn.querySelector("button").onclick = () => {
+      avisoBtn.style.display = "none";
+      STATE.perguntaAtual++;
+      renderizarPergunta();
+    };
+    atualizarBarraProgresso();
+    return;
+  }
 
   if (pergunta.tipo === "slider") {
     // Pergunta tipo slider (altura / peso)
@@ -1938,7 +2022,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-comecar").addEventListener("click", () => {
     STATE = {
       telaAtual: "quiz", score: 0, perguntaAtual: 0, perguntasFiltradas: [],
-      respostas: {}, nome: "", whatsapp: "", sexo: null, idadeFaixa: null, altura: null, peso: null, biotipo: null, objetivo: null,
+      respostas: {}, nome: "", whatsapp: "", sexo: null, tempoTreino: null, idadeFaixa: null, altura: null, peso: null, biotipo: null, objetivo: null,
       resultado: null, perfil: null, multi: { ...MULTI_INICIAL },
       clickouCTA: false, vioDownsell: false, tempoInicio: Date.now(),
       downsellTimer: null, _sessao: Date.now().toString(36),
