@@ -270,6 +270,38 @@
       cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
     }
 
+    /* ── Cards horizontais (imagem lateral + texto + seta) ──── */
+    .opcoes-lista-h { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+    .opcao-lista-h-card {
+      display: flex; align-items: center; gap: 0;
+      background: #161616; border: 2px solid #222; border-radius: 14px;
+      cursor: pointer; overflow: hidden; transition: border-color .2s, transform .15s;
+      text-align: left; padding: 0;
+    }
+    .opcao-lista-h-card:active { transform: scale(.98); }
+    .opcao-lista-h-card.selecionada { border-color: var(--cor-primaria); }
+    .opcao-lista-h-img {
+      width: 90px; min-width: 90px; height: 100px;
+      object-fit: cover; object-position: top; display: block; pointer-events: none;
+    }
+    .opcao-lista-h-img-placeholder {
+      width: 90px; min-width: 90px; height: 100px;
+      background: #1e1e1e; display: block;
+    }
+    .opcao-lista-h-body {
+      flex: 1; padding: 14px 12px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .opcao-lista-h-emoji { font-size: 20px; line-height: 1; margin-bottom: 2px; }
+    .opcao-lista-h-titulo { font-size: 15px; font-weight: 800; color: var(--cor-texto); line-height: 1.2; }
+    .opcao-lista-h-subtitulo { font-size: 12px; color: var(--cor-texto-fraco); line-height: 1.3; }
+    .opcao-lista-h-seta { padding: 0 16px; font-size: 18px; color: var(--cor-primaria); flex-shrink: 0; }
+
+    /* Subtítulo da pergunta (usado em p_meta) */
+    .quiz-subtitulo {
+      font-size: 14px; color: var(--cor-texto-fraco); margin: -8px 0 4px;
+      line-height: 1.4;
+    }
+
     /* ── Tela de aviso interstitial ─────────────────────────── */
     .aviso-wrapper {
       display: flex; flex-direction: column; align-items: center;
@@ -562,6 +594,7 @@
     <p class="quiz-modulo-label" id="quiz-modulo-label"></p>
     <p class="quiz-numero" id="quiz-numero">PERGUNTA 1</p>
     <h2 class="quiz-pergunta" id="quiz-pergunta"></h2>
+    <p class="quiz-subtitulo" id="quiz-subtitulo" style="display:none"></p>
     <p class="quiz-contexto" id="quiz-contexto"></p>
     <div class="opcoes-container" id="opcoes-container"></div>
     <div id="quiz-insight-wrap">
@@ -831,6 +864,19 @@ const PERGUNTAS = [
       { letra:"B", imagem:"FORÇA MÉDIA.png",         imagemF:"Definida.png",        texto:"Definido",      textoF:"Definida",      pontos:10, tag:"mesomorfo",     ind:{ prontidao:10 },               insight:"Você tem a genética mais favorável — o protocolo vai potencializar ainda mais seu resultado.", aoSelecionar:(s)=>{ s.biotipo="mesomorfo"; } },
       { letra:"C", imagem:"UM POUCO ACIMA DO PESO.webp", imagemF:"Acima do peso.png", texto:"Acima do Peso", textoF:"Acima do Peso", pontos:12, tag:"endomorfo_leve", ind:{ urgencia:8, acompanhamento:12 }, insight:"Com a estratégia certa de treino e alimentação, a definição vem mais rápido do que você imagina.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
       { letra:"D", imagem:"MAIS PESADO.webp",        imagemF:"Mais pesada.png",     texto:"Mais Pesado",   textoF:"Mais Pesada",   pontos:15, tag:"endomorfo",     ind:{ urgencia:10, acompanhamento:15 }, insight:"Endomorfos transformam com a estratégia certa de treino combinada com alimentação específica.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+    ],
+  },
+  {
+    id: "p_meta",
+    tipo: "lista-horizontal",
+    texto: "Qual mudança você mais quer ver?",
+    subtitulo: "Isso vai definir a base do seu plano!",
+    modulo: "PRÉ",
+    moduloLabel: "OBJETIVO",
+    condicao: () => true,
+    opcoes: [
+      { letra:"A", imagem:"perder-peso.jpg", emoji:"🔥", titulo:"Perder peso e gordura",   subtitulo:"Até -12 kg de Gordura",         pontos:12, tag:"meta_perder", ind:{ urgencia:10, acompanhamento:8 }, aoSelecionar:(s)=>{ s.meta="perder"; } },
+      { letra:"B", imagem:"ganhar-massa.jpg", emoji:"💪", titulo:"Ganhar força e músculos", subtitulo:"Até +5 kg de Massa Corporal",   pontos:10, tag:"meta_ganhar", ind:{ prontidao:10 },                  aoSelecionar:(s)=>{ s.meta="ganhar"; } },
     ],
   },
   {
@@ -1215,6 +1261,7 @@ let STATE = {
   whatsapp: "",
   sexo: null,
   tempoTreino: null,
+  meta: null,
   idadeFaixa: null,
   altura: null,
   peso: null,
@@ -1435,6 +1482,10 @@ function renderizarPergunta() {
   $("quiz-numero").textContent = `PERGUNTA ${idx + 1} DE ${total}`;
   $("quiz-pergunta").textContent = pergunta.texto;
 
+  const subtituloEl = $("quiz-subtitulo");
+  if (pergunta.subtitulo) { subtituloEl.textContent = pergunta.subtitulo; subtituloEl.style.display = ""; }
+  else subtituloEl.style.display = "none";
+
   const contextoEl = $("quiz-contexto");
   if (pergunta.contexto) { contextoEl.textContent = pergunta.contexto; contextoEl.style.display = ""; }
   else contextoEl.style.display = "none";
@@ -1442,6 +1493,37 @@ function renderizarPergunta() {
   const container = $("opcoes-container");
   container.innerHTML = "";
   const respostaAnterior = STATE.respostas[pergunta.id];
+
+  if (pergunta.tipo === "lista-horizontal") {
+    const lista = document.createElement("div");
+    lista.className = "opcoes-lista-h";
+    pergunta.opcoes.forEach((opcao, i) => {
+      const card = document.createElement("button");
+      card.className = "opcao-lista-h-card" + (respostaAnterior && respostaAnterior.opcaoIndex === i ? " selecionada" : "");
+      const src = encodeURIComponent(opcao.imagem).replace(/%2F/gi, '/');
+      card.innerHTML = `
+        <img class="opcao-lista-h-img" src="${src}" alt="${opcao.titulo}" loading="lazy" onerror="this.className='opcao-lista-h-img-placeholder'">
+        <div class="opcao-lista-h-body">
+          <div class="opcao-lista-h-emoji">${opcao.emoji}</div>
+          <div class="opcao-lista-h-titulo">${opcao.titulo}</div>
+          <div class="opcao-lista-h-subtitulo">${opcao.subtitulo}</div>
+        </div>
+        <div class="opcao-lista-h-seta">→</div>
+      `;
+      card.addEventListener("click", () => {
+        lista.querySelectorAll(".opcao-lista-h-card").forEach(c => c.classList.remove("selecionada"));
+        card.classList.add("selecionada");
+        STATE.respostas[pergunta.id] = { opcaoIndex: i, pontos: opcao.pontos, tag: opcao.tag, texto: opcao.titulo };
+        STATE.score = Math.max(0, STATE.score + opcao.pontos);
+        if (opcao.aoSelecionar) opcao.aoSelecionar(STATE);
+        setTimeout(() => { STATE.perguntaAtual++; renderizarPergunta(); }, 450);
+      });
+      lista.appendChild(card);
+    });
+    container.appendChild(lista);
+    atualizarBarraProgresso();
+    return;
+  }
 
   if (pergunta.tipo === "aviso") {
     $("quiz-modulo-label").textContent = "";
@@ -2022,7 +2104,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-comecar").addEventListener("click", () => {
     STATE = {
       telaAtual: "quiz", score: 0, perguntaAtual: 0, perguntasFiltradas: [],
-      respostas: {}, nome: "", whatsapp: "", sexo: null, tempoTreino: null, idadeFaixa: null, altura: null, peso: null, biotipo: null, objetivo: null,
+      respostas: {}, nome: "", whatsapp: "", sexo: null, tempoTreino: null, meta: null, idadeFaixa: null, altura: null, peso: null, biotipo: null, objetivo: null,
       resultado: null, perfil: null, multi: { ...MULTI_INICIAL },
       clickouCTA: false, vioDownsell: false, tempoInicio: Date.now(),
       downsellTimer: null, _sessao: Date.now().toString(36),
