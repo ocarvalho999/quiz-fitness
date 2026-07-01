@@ -516,6 +516,7 @@
   <!-- TELA 1 — SPLASH -->
   <section class="tela ativa" id="tela-splash">
     <div class="splash-content">
+      <div style="text-align:center;margin-bottom:24px;"><img src="logo.png" alt="Desafio 30D" style="width:120px;height:auto;"></div>
       <div class="badge-destaque"><span class="badge-dot"></span>Diagnóstico gratuito</div>
       <h1 class="splash-headline">SEU CORPO TEM UM<br><span>POTENCIAL</span> QUE VOCÊ<br>AINDA NÃO DESCOBRIU.</h1>
       <p class="splash-subheadline">Responda algumas perguntas honestas e descubra exatamente o que está travando sua transformação — e o que fazer sobre isso agora.</p>
@@ -733,8 +734,8 @@ const PERGUNTAS = [
     moduloLabel: "PERSONALIZAÇÃO",
     condicao: () => true,
     opcoes: [
-      { letra:"A", imagem:"Masculino.jpg", texto:"Masculino", pontos:0, tag:"masculino", ind:{}, insight:null, aoSelecionar:(s)=>{ s.sexo="masculino"; } },
-      { letra:"B", imagem:"Feminino.jpg",  texto:"Feminino",  pontos:0, tag:"feminino",  ind:{}, insight:null, aoSelecionar:(s)=>{ s.sexo="feminino"; } },
+      { letra:"A", imagem:"homem.png", texto:"Masculino", pontos:0, tag:"masculino", ind:{}, insight:null, aoSelecionar:(s)=>{ s.sexo="masculino"; } },
+      { letra:"B", imagem:"mulher.png",  texto:"Feminino",  pontos:0, tag:"feminino",  ind:{}, insight:null, aoSelecionar:(s)=>{ s.sexo="feminino"; } },
     ],
   },
   {
