@@ -760,10 +760,10 @@ const PERGUNTAS = [
     moduloLabel: "BIOTIPO",
     condicao: () => true,
     opcoes: [
-      { letra:"A", imagem:"MAGRO.png",                        texto:"Magro",                  pontos:5,  tag:"ectomorfo",     ind:{ acompanhamento:10 },          insight:"Ectomorfos precisam de protocolo específico de volume e nutrição hipercalórica para evoluir.", aoSelecionar:(s)=>{ s.biotipo="ectomorfo"; } },
-      { letra:"B", imagem:"FORÇA MÉDIA.png",                  texto:"Força Média",             pontos:10, tag:"mesomorfo",     ind:{ prontidao:10 },               insight:"Você tem a genética mais favorável — o protocolo vai potencializar ainda mais seu resultado.", aoSelecionar:(s)=>{ s.biotipo="mesomorfo"; } },
-      { letra:"C", imagem:"UM POUCO ACIMA DO PESO.webp", texto:"Um Pouco Acima do Peso", pontos:12, tag:"endomorfo_leve", ind:{ urgencia:8, acompanhamento:12 },  insight:"Com a estratégia certa de treino e alimentação, a definição vem mais rápido do que você imagina.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
-      { letra:"D", imagem:"MAIS PESADO.webp",              texto:"Mais Pesado",             pontos:15, tag:"endomorfo",     ind:{ urgencia:10, acompanhamento:15 }, insight:"Endomorfos transformam com a estratégia certa de treino combinada com alimentação específica.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+      { letra:"A", imagem:"MAGRO.png",               imagemF:"MAGRA.png",           texto:"Magro",         pontos:5,  tag:"ectomorfo",     ind:{ acompanhamento:10 },          insight:"Ectomorfos precisam de protocolo específico de volume e nutrição hipercalórica para evoluir.", aoSelecionar:(s)=>{ s.biotipo="ectomorfo"; } },
+      { letra:"B", imagem:"FORÇA MÉDIA.png",         imagemF:"DEFINIDA.png",        texto:"Definido",      pontos:10, tag:"mesomorfo",     ind:{ prontidao:10 },               insight:"Você tem a genética mais favorável — o protocolo vai potencializar ainda mais seu resultado.", aoSelecionar:(s)=>{ s.biotipo="mesomorfo"; } },
+      { letra:"C", imagem:"UM POUCO ACIMA DO PESO.webp", imagemF:"ACIMA DO PESO F.png", texto:"Acima do Peso", pontos:12, tag:"endomorfo_leve", ind:{ urgencia:8, acompanhamento:12 }, insight:"Com a estratégia certa de treino e alimentação, a definição vem mais rápido do que você imagina.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
+      { letra:"D", imagem:"MAIS PESADO.webp",        imagemF:"MAIS PESADA.png",     texto:"Mais Pesado",   pontos:15, tag:"endomorfo",     ind:{ urgencia:10, acompanhamento:15 }, insight:"Endomorfos transformam com a estratégia certa de treino combinada com alimentação específica.", aoSelecionar:(s)=>{ s.biotipo="endomorfo"; } },
     ],
   },
   {
@@ -1444,7 +1444,8 @@ function renderizarPergunta() {
     pergunta.opcoes.forEach((opcao, i) => {
       const card = document.createElement("button");
       card.className = "opcao-imagem-card" + (respostaAnterior && respostaAnterior.opcaoIndex === i ? " selecionada" : "");
-      const src = encodeURIComponent(opcao.imagem).replace(/%2F/gi, '/');
+      const imgFile = (STATE.sexo === "feminino" && opcao.imagemF) ? opcao.imagemF : opcao.imagem;
+      const src = encodeURIComponent(imgFile).replace(/%2F/gi, '/');
       card.innerHTML = `<img class="opcao-imagem-img" src="${src}" alt="${opcao.texto}" loading="lazy" onerror="this.style.display='none'" /><span class="opcao-imagem-label">${opcao.texto}</span>`;
       card.addEventListener("click", () => selecionarOpcao(pergunta, i, opcao));
       grid.appendChild(card);
