@@ -875,8 +875,8 @@ const PERGUNTAS = [
     moduloLabel: "OBJETIVO",
     condicao: () => true,
     opcoes: [
-      { letra:"A", imagem:"perder-peso.jpg", emoji:"🔥", titulo:"Perder peso e gordura",   subtitulo:"Até -12 kg de Gordura",         pontos:12, tag:"meta_perder", ind:{ urgencia:10, acompanhamento:8 }, aoSelecionar:(s)=>{ s.meta="perder"; } },
-      { letra:"B", imagem:"ganhar-massa.jpg", emoji:"💪", titulo:"Ganhar força e músculos", subtitulo:"Até +5 kg de Massa Corporal",   pontos:10, tag:"meta_ganhar", ind:{ prontidao:10 },                  aoSelecionar:(s)=>{ s.meta="ganhar"; } },
+      { letra:"A", imagem:"perder peso e gordura homem.webp", imagemF:"perder peso e gordura mulher.png", emoji:"🔥", titulo:"Perder peso e gordura",   subtitulo:"Até -12 kg de Gordura",       pontos:12, tag:"meta_perder", ind:{ urgencia:10, acompanhamento:8 }, aoSelecionar:(s)=>{ s.meta="perder"; } },
+      { letra:"B", imagem:"ganhar força e massa homem.webp",  imagemF:"ganhar força e massa mulher.png",  emoji:"💪", titulo:"Ganhar força e músculos", subtitulo:"Até +5 kg de Massa Corporal", pontos:10, tag:"meta_ganhar", ind:{ prontidao:10 },                  aoSelecionar:(s)=>{ s.meta="ganhar"; } },
     ],
   },
   {
@@ -1500,7 +1500,8 @@ function renderizarPergunta() {
     pergunta.opcoes.forEach((opcao, i) => {
       const card = document.createElement("button");
       card.className = "opcao-lista-h-card" + (respostaAnterior && respostaAnterior.opcaoIndex === i ? " selecionada" : "");
-      const src = encodeURIComponent(opcao.imagem).replace(/%2F/gi, '/');
+      const imgH = (STATE.sexo === "feminino" && opcao.imagemF) ? opcao.imagemF : opcao.imagem;
+      const src = encodeURIComponent(imgH).replace(/%2F/gi, '/');
       card.innerHTML = `
         <img class="opcao-lista-h-img" src="${src}" alt="${opcao.titulo}" loading="lazy" onerror="this.className='opcao-lista-h-img-placeholder'">
         <div class="opcao-lista-h-body">
