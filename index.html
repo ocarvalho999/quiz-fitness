@@ -794,10 +794,10 @@ const PERGUNTAS = [
     moduloLabel: "OBJETIVO",
     condicao: () => true,
     opcoes: [
-      { letra:"A", imagem:"Em forma.webp",    texto:"Em Forma",   pontos:8,  tag:"obj_forma",    ind:{ prontidao:8 },              insight:"Perfeito — definição visível é totalmente alcançável com o protocolo certo.", aoSelecionar:(s)=>{ s.objetivo="em_forma"; } },
-      { letra:"B", imagem:"Atlético.webp",   texto:"Atlético",   pontos:10, tag:"obj_atletico", ind:{ prontidao:10, urgencia:5 }, insight:"Corpo atlético exige treino inteligente + alimentação alinhada — e você vai chegar lá.", aoSelecionar:(s)=>{ s.objetivo="atletico"; } },
-      { letra:"C", imagem:"Trincado.webp",   texto:"Trincado",   pontos:12, tag:"obj_trincado", ind:{ urgencia:10, prontidao:8 }, insight:"Esse nível de definição requer periodização e protocolo personalizado — exatamente o que vamos montar.", aoSelecionar:(s)=>{ s.objetivo="trincado"; } },
-      { letra:"D", imagem:"Inchado.webp",    texto:"Inchado",    pontos:10, tag:"obj_inchado",  ind:{ prontidao:8, urgencia:5 },  insight:"Ganho de massa sólida com o protocolo certo — sem acumular gordura desnecessária.", aoSelecionar:(s)=>{ s.objetivo="inchado"; } },
+      { letra:"A", imagem:"Em forma.webp",  imagemF:"Em forma F.png",  texto:"Em Forma",  textoF:"Em Forma",  pontos:8,  tag:"obj_forma",    ind:{ prontidao:8 },              insight:"Perfeito — definição visível é totalmente alcançável com o protocolo certo.", aoSelecionar:(s)=>{ s.objetivo="em_forma"; } },
+      { letra:"B", imagem:"Atlético.webp", imagemF:"Sarada F.png",    texto:"Atlético",  textoF:"Sarada",    pontos:10, tag:"obj_atletico", ind:{ prontidao:10, urgencia:5 }, insight:"Corpo atlético exige treino inteligente + alimentação alinhada — e você vai chegar lá.", aoSelecionar:(s)=>{ s.objetivo="atletico"; } },
+      { letra:"C", imagem:"Trincado.webp", imagemF:"Trincada F.png",  texto:"Trincado",  textoF:"Trincada",  pontos:12, tag:"obj_trincado", ind:{ urgencia:10, prontidao:8 }, insight:"Esse nível de definição requer periodização e protocolo personalizado — exatamente o que vamos montar.", aoSelecionar:(s)=>{ s.objetivo="trincado"; } },
+      { letra:"D", imagem:"Inchado.webp",  imagemF:"Cavalona F.png",  texto:"Inchado",   textoF:"Cavalona",  pontos:10, tag:"obj_inchado",  ind:{ prontidao:8, urgencia:5 },  insight:"Ganho de massa sólida com o protocolo certo — sem acumular gordura desnecessária.", aoSelecionar:(s)=>{ s.objetivo="inchado"; } },
     ],
   },
 
@@ -1446,7 +1446,8 @@ function renderizarPergunta() {
       card.className = "opcao-imagem-card" + (respostaAnterior && respostaAnterior.opcaoIndex === i ? " selecionada" : "");
       const imgFile = (STATE.sexo === "feminino" && opcao.imagemF) ? opcao.imagemF : opcao.imagem;
       const src = encodeURIComponent(imgFile).replace(/%2F/gi, '/');
-      card.innerHTML = `<img class="opcao-imagem-img" src="${src}" alt="${opcao.texto}" loading="lazy" onerror="this.style.display='none'" /><span class="opcao-imagem-label">${opcao.texto}</span>`;
+      const label = (STATE.sexo === "feminino" && opcao.textoF) ? opcao.textoF : opcao.texto;
+      card.innerHTML = `<img class="opcao-imagem-img" src="${src}" alt="${label}" loading="lazy" onerror="this.style.display='none'" /><span class="opcao-imagem-label">${label}</span>`;
       card.addEventListener("click", () => selecionarOpcao(pergunta, i, opcao));
       grid.appendChild(card);
     });
